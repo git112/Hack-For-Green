@@ -13,26 +13,54 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Demo login - check email domain for user type
-    const isGovEmail = email.includes("gov") || email.includes("admin");
-    const userType = isGovEmail ? "government" : "citizen";
-    
-    localStorage.setItem("userType", userType);
-    localStorage.setItem("userName", email.split("@")[0]);
-    
-    toast({
-      title: "Login Successful!",
-      description: `Welcome back!`,
-    });
-    
-    if (userType === "government") {
-      navigate("/admin/dashboard");
-    } else {
-      navigate("/citizen/dashboard");
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Store in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userType", data.user.role === "citizen" ? "citizen" : "government");
+      localStorage.setItem("userName", data.user.name);
+      localStorage.setItem("userEmail", data.user.email);
+      if (data.user.wardName) {
+        localStorage.setItem("userWard", data.user.wardName);
+      }
+
+      toast({
+        title: "Login Successful!",
+        description: `Welcome back, ${data.user.name}!`,
+      });
+
+      if (data.user.role === "citizen") {
+        navigate("/citizen/dashboard");
+      } else {
+        navigate("/admin/dashboard");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -108,8 +136,8 @@ export default function Login() {
               </a>
             </div>
 
-            <Button type="submit" className="w-full gradient-primary border-0 h-12 text-base">
-              Login
+            <Button type="submit" disabled={loading} className="w-full gradient-primary border-0 h-12 text-base">
+              {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
 

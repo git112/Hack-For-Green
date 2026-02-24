@@ -91,7 +91,7 @@ export default function AIReport() {
       }
 
       setSelectedFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -101,12 +101,12 @@ export default function AIReport() {
 
       // Start upload process
       setState("uploading");
-      
+
       // Simulate upload
       setTimeout(() => {
         setState("analyzing");
         getCurrentLocation();
-        
+
         // Simulate AI analysis
         setTimeout(() => {
           // Random detection result
@@ -136,51 +136,61 @@ export default function AIReport() {
       return;
     }
 
-    // Create report object
-    const report = {
-      id: Date.now().toString(),
-      citizenName: localStorage.getItem("userName") || "Citizen",
-      citizenId: localStorage.getItem("userId") || "user_" + Date.now(),
-      ward: ward,
-      title: `${detection.type} in ${ward}`,
-      description: description || `AI detected ${detection.type} with ${detection.confidence}% confidence`,
-      pollutionType: detection.pollutionType,
-      severity: detection.severity,
-      address: address || "Address not provided",
-      location: location,
-      photos: imagePreview ? [imagePreview] : [],
-      aiConfidence: detection.confidence,
-      aiAnalysis: {
-        detectedType: detection.type,
-        confidence: detection.confidence,
-      },
-      timestamp: new Date().toISOString(),
-      status: "pending",
-    };
+    setState("uploading");
 
-    // Save to localStorage (simulating backend)
-    const existingReports = JSON.parse(localStorage.getItem("adminReports") || "[]");
-    existingReports.push(report);
-    localStorage.setItem("adminReports", JSON.stringify(existingReports));
+    try {
+      const token = localStorage.getItem("token");
+      const reportData = {
+        title: `${detection.type} in ${ward}`,
+        description: description || `AI detected ${detection.type} with ${detection.confidence}% confidence`,
+        pollutionType: detection.pollutionType,
+        severity: detection.severity,
+        wardName: ward,
+        address: address || "Address not provided",
+        location: location ? `${location.lat},${location.lng}` : undefined,
+        photos: imagePreview ? [imagePreview] : [],
+        aiConfidence: detection.confidence,
+      };
 
-    // Update user credits
-    const currentCredits = parseInt(localStorage.getItem("greenPoints") || "0");
-    const newCredits = currentCredits + 50;
-    localStorage.setItem("greenPoints", newCredits.toString());
+      const response = await fetch("http://localhost:3000/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(reportData),
+      });
 
-    // Update report count
-    const reportCount = parseInt(localStorage.getItem("reportsSubmitted") || "0");
-    localStorage.setItem("reportsSubmitted", (reportCount + 1).toString());
+      const data = await response.json();
 
-    setState("submitted");
-    
-    toast({
-      title: "Report Submitted Successfully! 🎉",
-      description: "+50 Credits earned for your contribution! Report sent to admin.",
-    });
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to submit report");
+      }
 
-    // Trigger event for admin dashboard to refresh
-    window.dispatchEvent(new CustomEvent("newReportSubmitted", { detail: report }));
+      // Update local storage for points/credits for immediate feedback
+      const currentCredits = parseInt(localStorage.getItem("greenPoints") || "0");
+      localStorage.setItem("greenPoints", (currentCredits + 50).toString());
+
+      const reportCount = parseInt(localStorage.getItem("reportsSubmitted") || "0");
+      localStorage.setItem("reportsSubmitted", (reportCount + 1).toString());
+
+      setState("submitted");
+
+      toast({
+        title: "Report Submitted Successfully! 🎉",
+        description: "+50 Credits earned for your contribution!",
+      });
+
+      // Trigger event for admin dashboard to refresh locally if needed
+      window.dispatchEvent(new CustomEvent("newReportSubmitted", { detail: data.data }));
+    } catch (error: any) {
+      toast({
+        title: "Submission Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setState("detected"); // Go back to detected state to retry
+    }
   };
 
   const handleReset = () => {
@@ -244,7 +254,7 @@ export default function AIReport() {
                   Upload Image
                 </Button>
               </div>
-              
+
               {/* Hidden file inputs */}
               <input
                 ref={fileInputRef}
@@ -285,8 +295,8 @@ export default function AIReport() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {state === "uploading" 
-                  ? "Preparing your image for analysis" 
+                {state === "uploading"
+                  ? "Preparing your image for analysis"
                   : "Scanning for pollution sources using AI"}
               </p>
             </motion.div>
@@ -314,9 +324,9 @@ export default function AIReport() {
               <div className="aspect-video rounded-xl bg-muted flex items-center justify-center overflow-hidden relative">
                 {imagePreview ? (
                   <>
-                    <img 
-                      src={imagePreview} 
-                      alt="Uploaded pollution report" 
+                    <img
+                      src={imagePreview}
+                      alt="Uploaded pollution report"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 right-2">
@@ -394,8 +404,8 @@ export default function AIReport() {
                 <Button variant="outline" className="flex-1" onClick={handleReset}>
                   Retake Photo
                 </Button>
-                <Button 
-                  className="flex-1 gradient-primary border-0" 
+                <Button
+                  className="flex-1 gradient-primary border-0"
                   onClick={handleSubmit}
                   disabled={!ward || !detection}
                 >

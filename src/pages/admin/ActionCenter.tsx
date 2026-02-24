@@ -110,37 +110,40 @@ const defaultTasks = [
   },
 ];
 
-// Convert localStorage reports to task format
-const loadReportsFromStorage = () => {
-  const storedReports = localStorage.getItem("adminReports");
-  const defaultReports = defaultTasks;
+const loadReportsFromBackend = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:3000/api/reports/pending", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
 
-  if (!storedReports) {
-    // Initialize with default tasks
-    localStorage.setItem("adminReports", JSON.stringify(defaultReports));
-    return defaultReports;
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message);
+
+    const reports = data.data;
+    return reports.map((report: any) => ({
+      id: report._id,
+      title: report.title,
+      location: report.address || report.wardName || "Unknown Location",
+      reportedBy: report.citizen?.name || "Citizen",
+      time: report.createdAt ? getTimeAgo(report.createdAt) : "Recently",
+      status: (report.status || "new") as "new" | "in_progress" | "resolved",
+      severity: (report.severity || "medium") as "low" | "medium" | "high" | "critical",
+      hasEvidence: report.photos && report.photos.length > 0,
+      photos: report.photos || [],
+      description: report.description || "",
+      pollutionType: report.pollutionType || "other",
+      aiConfidence: report.aiConfidence || 0,
+      ward: report.wardName || "",
+    }));
+  } catch (err) {
+    console.error("Failed to fetch reports:", err);
+    return defaultTasks;
   }
-
-  const reports = JSON.parse(storedReports);
-  const convertedReports = reports.map((report: Report) => ({
-    id: report.id,
-    title: report.title,
-    location: report.address || report.ward,
-    reportedBy: report.citizenName || report.reportedBy || "Citizen",
-    time: report.timestamp ? getTimeAgo(report.timestamp) : report.time || "Recently",
-    status: (report.status || "new") as "new" | "in_progress" | "resolved",
-    severity: (report.severity || "medium") as "low" | "medium" | "high" | "critical",
-    hasEvidence: report.photos && report.photos.length > 0,
-    photos: report.photos || [],
-    description: report.description || "",
-    pollutionType: report.pollutionType || "other",
-    aiConfidence: report.aiConfidence || report.aiAnalysis?.confidence || 0,
-    ward: report.ward || "",
-  }));
-
-  // Merge with defaults if new reports exist
-  return convertedReports.length > defaultReports.length ? convertedReports : defaultReports;
 };
+
 
 const statusColors = {
   new: "bg-destructive text-destructive-foreground",
@@ -158,14 +161,14 @@ export default function ActionCenter() {
   const [filter, setFilter] = useState("all");
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const [assignedCrews, setAssignedCrews] = useState<{ [key: string]: string }>({});
-  const [tasks, setTasks] = useState(loadReportsFromStorage());
+  const [tasks, setTasks] = useState<any[]>(defaultTasks);
   const [viewImage, setViewImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load reports on mount and listen for new reports
   useEffect(() => {
-    const loadReports = () => {
-      const newTasks = loadReportsFromStorage();
+    const loadReports = async () => {
+      const newTasks = await loadReportsFromBackend();
       setTasks(newTasks);
     };
 
@@ -182,8 +185,8 @@ export default function ActionCenter() {
 
     window.addEventListener('newReportSubmitted', handleNewReport);
 
-    // Refresh every 5 seconds to check for new reports
-    const interval = setInterval(loadReports, 5000);
+    // Refresh every 10 seconds to check for new reports
+    const interval = setInterval(loadReports, 10000);
 
     return () => {
       window.removeEventListener('newReportSubmitted', handleNewReport);

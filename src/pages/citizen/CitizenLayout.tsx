@@ -35,6 +35,9 @@ export default function CitizenLayout() {
   const handleLogout = () => {
     localStorage.removeItem("userType");
     localStorage.removeItem("userName");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userWard");
     navigate("/");
   };
 

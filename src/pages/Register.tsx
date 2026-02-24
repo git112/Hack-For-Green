@@ -9,7 +9,7 @@ import { Wind, User, Building2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const wards = [
-  "Ward 1 - Central", "Ward 2 - North", "Ward 3 - South", 
+  "Ward 1 - Central", "Ward 2 - North", "Ward 3 - South",
   "Ward 4 - East", "Ward 5 - West", "Ward 6 - Industrial",
   "Ward 7 - Residential", "Ward 8 - Commercial"
 ];
@@ -30,26 +30,71 @@ export default function Register() {
     employeeId: "",
     zone: "",
   });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Store user type and redirect
-    localStorage.setItem("userType", userType);
-    localStorage.setItem("userName", formData.name);
-    localStorage.setItem("userWard", formData.ward || formData.zone);
-    
-    toast({
-      title: "Registration Successful!",
-      description: `Welcome to CleanAirGov, ${formData.name}!`,
-    });
-    
-    if (userType === "citizen") {
-      navigate("/citizen/dashboard");
-    } else {
-      navigate("/admin/dashboard");
+    setLoading(true);
+
+    try {
+      let role = userType === "citizen" ? "citizen" : "officer";
+      if (formData.email.includes("admin")) {
+        role = "admin";
+      }
+
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: role,
+        ...(role === "citizen" && { wardName: formData.ward }),
+        ...(role === "officer" && {
+          employeeId: formData.employeeId,
+          assignedZone: formData.zone
+        }),
+      };
+
+      const response = await fetch("http://localhost:3000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
+
+      // Store in localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userType", data.user.role === "citizen" ? "citizen" : "government");
+      localStorage.setItem("userName", data.user.name);
+      localStorage.setItem("userWard", formData.ward || formData.zone);
+      localStorage.setItem("userEmail", data.user.email);
+
+      toast({
+        title: "Registration Successful!",
+        description: `Welcome to CleanAirGov, ${data.user.name}!`,
+      });
+
+      if (data.user.role === "citizen") {
+        navigate("/citizen/dashboard");
+      } else {
+        navigate("/admin/dashboard");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,11 +131,10 @@ export default function Register() {
             <button
               type="button"
               onClick={() => setUserType("citizen")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${
-                userType === "citizen"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${userType === "citizen"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground"
+                }`}
             >
               <User className="w-4 h-4" />
               Citizen
@@ -98,11 +142,10 @@ export default function Register() {
             <button
               type="button"
               onClick={() => setUserType("government")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${
-                userType === "government"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${userType === "government"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground"
+                }`}
             >
               <Building2 className="w-4 h-4" />
               Government
@@ -197,8 +240,8 @@ export default function Register() {
               </Select>
             </div>
 
-            <Button type="submit" className="w-full gradient-primary border-0 h-12 text-base">
-              Create Account
+            <Button type="submit" disabled={loading} className="w-full gradient-primary border-0 h-12 text-base">
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 

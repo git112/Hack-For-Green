@@ -20,12 +20,31 @@ export const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
+    let wardId = ward;
+
+    // If ward name is provided but not ID, try to find the ID
+    if (!wardId && wardName && role === 'citizen') {
+      const Ward = (await import('../models/Ward.js')).default;
+      const foundWard = await Ward.findOne({ name: wardName });
+      if (foundWard) {
+        wardId = foundWard._id;
+      } else {
+        // Create a dummy ward if it doesn't exist for demo/initial setup
+        const newWard = await Ward.create({
+          name: wardName,
+          code: wardName.substring(0, 3).toUpperCase() + Math.floor(Math.random() * 100),
+          city: 'Delhi'
+        });
+        wardId = newWard._id;
+      }
+    }
+
     const user = await User.create({
       name,
       email,
       password,
       role,
-      ...(role === 'citizen' && { ward, wardName }),
+      ...(role === 'citizen' && { ward: wardId, wardName }),
       ...(role === 'officer' && { employeeId, assignedZone }),
     });
 

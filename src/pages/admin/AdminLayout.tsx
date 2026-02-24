@@ -38,6 +38,9 @@ export default function AdminLayout() {
   const handleLogout = () => {
     localStorage.removeItem("userType");
     localStorage.removeItem("userName");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userWard");
     navigate("/");
   };
 
@@ -125,8 +128,8 @@ export default function AdminLayout() {
               <Button
                 variant="ghost"
                 className={`w-full justify-start ${location.pathname === "/admin/settings"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
                   }`}
                 onClick={() => setSidebarOpen(false)}
               >
