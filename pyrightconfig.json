@@ -1,0 +1,18 @@
+{
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Windows",
+    "pythonPath": "C:/Program Files/Python312/python.exe",
+    "venvPath": "C:/Program Files/Python312",
+    "include": [
+        "pathway_service"
+    ],
+    "typeCheckingMode": "off",
+    "useLibraryCodeForTypes": true,
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false,
+    "reportMissingTypeStubs": false,
+    "reportUnknownVariableType": false,
+    "reportUnknownMemberType": false,
+    "reportUnknownArgumentType": false,
+    "reportGeneralTypeIssues": false
+}
