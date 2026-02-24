@@ -1,181 +1,311 @@
-To build the GovTech website, you need a structured flow that clearly separates the Public, Citizen, and Government experiences.
+🌍 GovTech Air Quality Management Platform (GovAir)
 
-Here is the step-by-step website flow you should follow during development:
+A smart GovTech web platform for real-time air pollution monitoring, citizen reporting, AI-powered insights, and government action management.
+The system integrates live AQI streaming, AI detection, RAG-based chatbot, and role-based dashboards for citizens and government officials.
+
+🚀 Project Vision
+
+GovAir aims to:
+
+Empower citizens to report pollution issues and earn rewards
+
+Help governments monitor pollution hotspots in real time
+
+Enable data-driven decision making using AI and streaming analytics
+
+Improve public health awareness through live AQI insights
+
+🧭 Website Flow Overview
+
+The platform is divided into three major user flows:
+
+Public Flow – Accessible without login
+
+Citizen Flow – Reporting, navigation, and rewards
+
+Government Flow – Monitoring, analytics, and action management
 
 🌐 1. PUBLIC FLOW (Entry Point)
+
 Accessible to everyone before logging in.
 
-A. Page 1: Landing Page (Home)
+🏠 Page 1: Landing Page (Home)
 
-Header: Logo, Navigation (Home, Live Map, Login, Register).
+Header: Logo, Navigation (Home, Live Map, Login, Register)
 
-Hero Section:
+Hero Section
 
-Headline: "Smart Pollution Action for [City Name]"
+Headline: Smart Pollution Action for [City Name]
 
-Live Widget: Display Current City Average AQI (e.g., "150 AQI - Moderate").
+Live AQI Widget (e.g., 150 AQI – Moderate)
 
-Search Bar: "Enter Pincode or Ward."
+Search Bar: Enter Pincode or Ward
 
-Features: Icons explaining "Clean Route," "Earn Credits," and "AI Reporting."
+Features Section
 
-Footer: Emergency numbers and Copyright.
+Clean Route Navigation
 
-B. Page 2: Registration
+Earn Credits for Reporting
 
-Toggle Switch: [ Citizen ] vs [ Government ].
+AI-Based Pollution Detection
 
-Citizen Form: Name, Email, Password, Home Ward (Dropdown).
+Footer
 
-Govt Form: Name, Employee ID, Official Email, Password, Assigned Zone.
+Emergency Numbers
 
-C. Page 3: Login
+Copyright
 
-Input: Email & Password.
+📝 Page 2: Registration
 
-Backend Logic:
+Toggle Role Selection
 
-If User == Citizen → Redirect to Page 4.
+Citizen
 
-If User == Official → Redirect to Page 8.
+Government
 
-👤 2. CITIZEN FLOW (Logged In)
-Focus: Personal usage, reporting, and rewards.
+Citizen Registration
 
-D. Page 4: Citizen Dashboard (Home)
+Name, Email, Password
 
-Header: "Welcome, [Name] | Wallet: 450 Credits".
+Home Ward (Dropdown)
 
-My Ward Status: Card showing the AQI of the user's specific ward.
+Government Registration
 
-Simple Map: Shows the user's 5km radius with Safe (Green) or Unsafe (Red) zones.
+Name, Employee ID
 
-Quick Actions: Buttons for "Report Issue" and "Find Clean Route".
+Official Email, Password
 
-E. Page 5: Smart Report (AI Camera)
+Assigned Zone
 
-Input: Button to Upload/Take Photo.
+🔐 Page 3: Login
 
-Process: Display "AI Detecting..." animation.
+Email & Password
 
-Result: "Garbage Burning Detected (98% Confidence)".
+Role-Based Redirection
 
-Submit: Button to send report to Govt.
+Citizen → Citizen Dashboard
 
-Success: "Report Sent! +50 Credits Earned."
+Officer/Admin → Admin Dashboard
 
-F. Page 6: Clean Navigation
+👤 2. CITIZEN FLOW (After Login)
 
-Input: Start Point & Destination.
+Focused on personal safety, reporting, and rewards.
 
-Output: Comparison Card:
+🏡 Page 4: Citizen Dashboard
 
-Route A: Fast but Polluted (Red).
+Welcome Message with Wallet Balance
 
-Route B: Clean & Healthy (Green - Recommended).
+My Ward AQI Status Card
 
-Map Display: Visualizes both paths on the map.
+Local Safety Map
 
-G. Page 7: Rewards Wallet
+5 km radius
 
-Balance: Big text showing Total Credits.
+Green (Safe) / Red (Unsafe) zones
 
-Coupons: Grid of redeemable offers (e.g., "Free Bus Ticket - 200 Credits").
+Quick Actions
 
-🏛️ 3. GOVERNMENT FLOW (Logged In)
-Focus: Management, Analytics, and Deployment.
+Report Issue
 
-H. Page 8: Admin Dashboard (Command Center)
+Find Clean Route
 
-Overview Stats: Total Critical Wards, Active Complaints, Avg City AQI.
+📸 Page 5: Smart Report (AI Camera)
 
-Heatmap: Advanced map showing pollution hotspots across the entire city. *
+Upload / Capture Photo
 
-AI Prediction Box: "Warning: AQI predicted to rise in Ward 5 tomorrow."
+AI Detection Animation
 
-I. Page 9: Action Center (Task Board)
+Result Example:
 
-Kanban View: Columns for New Reports, In Progress, Resolved.
+Garbage Burning Detected (98% confidence)
 
-Task Card:
+Submit Report to Government
 
-Details: "Garbage Fire in Ward 12".
+Reward Confirmation:
 
-Evidence: View Photo (uploaded by citizen).
++50 Credits Earned
 
-Action: Dropdown to "Assign Crew".
+🧭 Page 6: Clean Navigation
 
-J. Page 10: Broadcast & Alerts
+Input: Start Point & Destination
 
-Input: Select Target Ward + Type Message (e.g., "High Dust Alert").
+Output:
 
-Action: Button to "Send SMS/App Notification".
+Route A: Fast but Polluted (Red)
 
-K. Page 11: Analytics
+Route B: Clean & Healthy (Green – Recommended)
 
-Charts: Monthly pollution trends, Pollution Source breakdown (Traffic vs Industry).
+Map Visualization of Both Routes
 
-Export: Button to "Download Monthly Report (PDF)".
+🎁 Page 7: Rewards Wallet
 
----
+Total Credits Display
 
-## 🤖 GovAir AI Chatbot
+Redeemable Coupons
 
-The platform includes an official AI assistant called "GovAir AI" that provides role-based assistance:
+Example: Free Bus Ticket – 200 Credits
 
-### Features:
-- **Role-Based Behavior**: Different responses based on user role (Public, Citizen, Officer, Admin)
-- **Context-Aware**: Uses current AQI, predictions, and health data to provide accurate information
-- **Factual & Neutral**: Never speculates or provides political opinions
-- **Always Available**: Floating chat button accessible from all pages
+🏛️ 3. GOVERNMENT FLOW (After Login)
 
-### Setup:
+Focused on monitoring, analytics, and action execution.
 
-1. **Backend Environment Variable**:
-   Create a `.env` file in the `server/` directory:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
+📊 Page 8: Admin Dashboard (Command Center)
 
-2. **Get Gemini API Key**:
-   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Create a new API key
-   - Add it to your server `.env` file
+City Overview Stats
 
-3. **Frontend Environment Variable** (optional):
-   Create a `.env` file in the root directory:
-   ```env
-   VITE_API_URL=http://localhost:3000
-   ```
+Critical Wards
 
-### Role-Based Capabilities:
+Active Complaints
 
-- **Public**: General air quality information and public health advisories
-- **Citizen**: Personalized ward data, health recommendations, and reporting guidance
-- **Officer**: Technical data analysis, source contributions, and enforcement insights
-- **Admin**: System-wide analysis, policy simulation support, and strategic insights
+Average City AQI
 
-### Troubleshooting: ERR_CONNECTION_REFUSED
+Heatmap
 
-If you see `ERR_CONNECTION_REFUSED` when using the chatbot:
+City-wide pollution hotspots
 
-1. **Make sure the backend server is running:**
-   ```bash
-   cd server
-   npm run dev
-   ```
+AI Prediction Alerts
 
-2. **Check that the server is listening on port 3000:**
-   - You should see: `Server running on port 3000`
-   - Test with: `curl http://localhost:3000/health`
+Example: AQI predicted to rise in Ward 5 tomorrow
 
-3. **Verify your `.env` file exists in `server/` directory** with:
-   - `GEMINI_API_KEY=your_key_here`
-   - `PORT=3000`
-   - `MONGODB_URI=...`
+🗂️ Page 9: Action Center (Task Board)
 
-4. **Make sure MongoDB is running** (if using local MongoDB)
+Kanban Board
 
-See `SERVER_SETUP.md` for detailed setup instructions.
+New Reports
 
+In Progress
 
+Resolved
+
+Task Card Details
+
+Issue Description
+
+Evidence Photo
+
+Assign Cleanup Crew
+
+📢 Page 10: Broadcast & Alerts
+
+Select Target Ward
+
+Message Type (Dust Alert, Health Warning, etc.)
+
+Send SMS / App Notifications
+
+📈 Page 11: Analytics
+
+Monthly Pollution Trends
+
+Pollution Source Breakdown
+
+Traffic
+
+Industry
+
+Export Reports (PDF)
+
+🤖 GovAir AI Chatbot
+
+A role-based, AI-powered assistant available on all pages.
+
+🔑 Key Features
+
+Role-aware responses (Public, Citizen, Officer, Admin)
+
+Uses live AQI + predictions + health guidelines
+
+Neutral, factual, and non-political
+
+Floating chat button (always accessible)
+
+🧠 Role-Based Capabilities
+Role	Capabilities
+Public	AQI info, health advisories
+Citizen	Ward-specific data, reporting help
+Officer	Technical analysis & enforcement insights
+Admin	City-wide analytics & policy simulation
+⚙️ Environment Setup
+Backend (server/.env)
+GEMINI_API_KEY=your_gemini_api_key_here
+PORT=3000
+MONGODB_URI=your_mongodb_uri
+Frontend (.env)
+VITE_API_URL=http://localhost:3000
+🧪 Troubleshooting: ERR_CONNECTION_REFUSED
+
+Start backend server:
+
+cd server
+npm run dev
+
+Verify server health:
+
+curl http://localhost:3000/health
+
+Ensure MongoDB is running
+
+Confirm .env file exists in server/
+
+🧩 System Architecture
+INGESTION LAYER
+• Ward Sensors → Simulated AQI Stream (5s)
+
+STREAMING ENGINE (Pathway)
+• Rolling Average (20 samples)
+• Spike Detection (+30%)
+• Threshold Alerts (150 / 200 / 300)
+
+AI LAYER
+• Document Store (WHO + Govt Rules)
+• RAG Pipeline (Live AQI + Docs → Gemini)
+
+FRONTEND
+• React Dashboard
+• Live AQI Updates (SSE)
+• Stream Monitor & Console
+▶️ How To Run the Project
+Option 1: Automated (Recommended)
+start-all.bat
+Option 2: Manual
+
+Terminal 1 – Pathway Engine
+
+python pathway_service/pathway_engine.py
+
+Terminal 2 – Backend
+
+cd server
+npm run dev
+
+Terminal 3 – Front-End
+
+npm run dev
+🌐 Service URLs
+Service	URL
+Frontend	http://localhost:8080
+
+Admin Stream Monitor	http://localhost:8080/admin/stream
+
+Backend API	http://localhost:3000
+
+Pathway Engine	http://localhost:5000
+
+Stream Logs	http://localhost:3000/api/stream/logs
+✅ Features Implemented
+
+Live AQI Streaming (5s interval)
+
+Rolling Average Window Functions
+
+Spike Detection (+30%)
+
+Automatic AQI Threshold Alerts
+
+AI RAG Chatbot (Gemini)
+
+WHO + Govt Document Store
+
+Real-time Dashboard Updates (No Refresh)
+
+Stream Monitoring Console
