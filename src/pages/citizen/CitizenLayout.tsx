@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  Wind, LayoutDashboard, Camera, Navigation, Gift, 
-  LogOut, Menu, X, User, Wallet 
+import {
+  Wind, LayoutDashboard, Camera, Navigation, Gift,
+  LogOut, Menu, X, User, Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import GovAirChatbot from "@/components/GovAirChatbot";
+import { usePathwayStream } from "@/hooks/usePathwayStream";
 
 const navItems = [
   { to: "/citizen/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -21,6 +22,7 @@ export default function CitizenLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const userName = localStorage.getItem("userName") || "Citizen";
+  const stream = usePathwayStream();
   const credits = 450;
 
   useEffect(() => {
@@ -151,7 +153,7 @@ export default function CitizenLayout() {
         userRole="Citizen"
         wardId={localStorage.getItem("userWard") || undefined}
         city="Delhi"
-        currentAqi={85}
+        currentAqi={stream.cityStats?.avg_aqi ?? 85}
       />
     </div>
   );

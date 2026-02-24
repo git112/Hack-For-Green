@@ -351,3 +351,11 @@ export function initStreamBridge() {
   // Start polling immediately
   pollPathway();
 }
+
+/**
+ * Get the most recent snapshot of the city-wide air quality data
+ * @returns {Object|null}
+ */
+export function getLatestStreamData() {
+  return latestStreamData;
+}

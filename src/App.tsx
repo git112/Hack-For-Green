@@ -23,6 +23,7 @@ import PolicySimulation from "./pages/admin/PolicySimulation";
 import HealthImpact from "./pages/admin/HealthImpact";
 import Settings from "./pages/admin/Settings";
 import StreamMonitor from "./pages/admin/StreamMonitor";
+import Gateway from "./pages/Gateway";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,8 +36,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<Gateway />} />
           <Route element={<PublicLayout />}>
-            <Route path="/" element={<Index />} />
+            <Route path="/home" element={<Index />} />
           </Route>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />

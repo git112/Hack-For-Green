@@ -8,8 +8,10 @@ import { AQIBadge } from "@/components/ui/AQIBadge";
 import { PollutionMap } from "@/components/maps/PollutionMap";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { usePathwayStream } from "@/hooks/usePathwayStream";
+import { TransitionPage } from "@/components/ui/TransitionPage";
+import { FlaskConical, Bell, BarChart3, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ─── Static complaints data ─────────────────────────── */
 const activeComplaints = [
@@ -35,6 +37,18 @@ export default function AdminDashboard() {
     const timer = setInterval(() => setTicker(t => (t + 1) % 100), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const navigate = useNavigate();
+  const [isOperating, setIsOperating] = useState(false);
+  const [opLabel, setOpLabel] = useState("");
+
+  const handleOperation = (path: string, label: string) => {
+    setOpLabel(label);
+    setIsOperating(true);
+    setTimeout(() => {
+      navigate(path);
+    }, 1800);
+  };
 
   const handleZoneClick = (ward: string) => {
     setSelectedWard(ward);
@@ -68,6 +82,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-5 p-1">
+      <TransitionPage
+        isLoading={isOperating}
+        message={`LAUNCHING ${opLabel.toUpperCase()}`}
+        subMessage="Syncing security protocols with city mesh..."
+      />
+
       {/* 🏙️ TOP NAV / STATUS BAR */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between">
@@ -212,6 +232,41 @@ export default function AdminDashboard() {
             </Button>
           </Link>
         </motion.div>
+      </div>
+
+      {/* 🛠️ STRATEGIC OPERATIONS HUB */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Policy Simulation", path: "/admin/simulation", icon: FlaskConical, desc: "Run Digital Twin", color: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/20", text: "text-blue-400" },
+          { label: "Alert Broadcast", path: "/admin/broadcast", icon: Bell, desc: "Notify All Wards", color: "from-orange-500/20 to-red-500/20", border: "border-orange-500/20", text: "text-orange-400" },
+          { label: "Source Analysis", path: "/admin/analytics", icon: BarChart3, desc: "Deep Intelligence", color: "from-purple-500/20 to-pink-500/20", border: "border-purple-500/20", text: "text-purple-400" },
+          { label: "Security Settings", path: "/admin/settings", icon: ShieldCheck, desc: "Core Protocol", color: "from-emerald-500/20 to-teal-500/20", border: "border-emerald-500/20", text: "text-emerald-400" },
+        ].map((op) => (
+          <motion.button
+            key={op.label}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleOperation(op.path, op.label)}
+            className={`group flex flex-col items-start p-5 rounded-[2rem] bg-gradient-to-br ${op.color} border ${op.border} transition-all hover:shadow-2xl hover:shadow-black/20`}
+          >
+            <div className={`p-3 rounded-2xl bg-card border ${op.border} mb-4 group-hover:scale-110 transition-transform`}>
+              <op.icon className={`w-6 h-6 ${op.text}`} />
+            </div>
+            <div className="text-left">
+              <h3 className="text-sm font-bold text-foreground mb-1">{op.label}</h3>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold opacity-60 flex items-center gap-1 group-hover:text-primary transition-colors">
+                {op.desc} <ArrowUpRight className="w-2.5 h-2.5" />
+              </p>
+            </div>
+            <div className="mt-4 w-full h-1 bg-white/5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: "30%" }}
+                whileHover={{ width: "100%" }}
+                className={`h-full bg-current ${op.text}`}
+              />
+            </div>
+          </motion.button>
+        ))}
       </div>
 
       {/* 📋 ENFORCEMENT & TASKS GRID */}

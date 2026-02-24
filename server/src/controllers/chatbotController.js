@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getLatestStreamData } from '../streamBridge.js';
 
 // ─────────────────────────────────────────────────────────
 //  LOCAL RAG ENGINE  (works without any API key)
@@ -49,52 +50,26 @@ function getAqiLevelKey(aqi) {
 /**
  * Parse ward data from the ward_context string sent by frontend
  */
-function parseWardContext(wardContext) {
-  if (!wardContext) return { wards: [], alerts: [], cityAvg: null, cityMax: null, criticalCount: 0 };
+function getDynamicContext() {
+  const data = getLatestStreamData();
+  if (!data) return { wards: [], alerts: [], cityAvg: 0, cityMax: 0, criticalCount: 0 };
 
-  const wards = [];
-  const alerts = [];
-  let cityAvg = null;
-  let cityMax = null;
-  let criticalCount = 0;
-
-  const lines = wardContext.split('\n');
-  for (const line of lines) {
-    // Parse ward lines like: "Ward 1 - Central: AQI=85 (Good), rolling_avg=82.3"
-    const wardMatch = line.match(/^(.+?):\s*AQI=(\d+)\s*\(([^)]+)\),\s*rolling_avg=([\d.]+)(.*)/);
-    if (wardMatch) {
-      wards.push({
-        name: wardMatch[1].trim(),
-        aqi: parseInt(wardMatch[2]),
-        level: wardMatch[3].trim(),
-        avg: parseFloat(wardMatch[4]),
-        spike: line.includes('SPIKE'),
-      });
-    }
-    // Parse alert lines
-    const alertMatch = line.match(/[🚨🔴🟠]\s*(.+?):\s*(\w+)\s*\(AQI=(\d+)\)/);
-    if (alertMatch) {
-      alerts.push({ ward: alertMatch[1].trim(), severity: alertMatch[2], aqi: parseInt(alertMatch[3]) });
-    }
-    // Parse city stats
-    const avgMatch = line.match(/City Average AQI:\s*([\d.]+)/);
-    if (avgMatch) cityAvg = parseFloat(avgMatch[1]);
-    const maxMatch = line.match(/City Max AQI:\s*(\d+)/);
-    if (maxMatch) cityMax = parseInt(maxMatch[1]);
-    const critMatch = line.match(/Critical Wards:\s*(\d+)/);
-    if (critMatch) criticalCount = parseInt(critMatch[1]);
-  }
-
-  return { wards, alerts, cityAvg, cityMax, criticalCount };
+  return {
+    wards: data.wards || [],
+    alerts: data.active_alerts || [],
+    cityAvg: data.city_summary?.avg_aqi || 0,
+    cityMax: data.city_summary?.max_aqi || 0,
+    criticalCount: data.city_summary?.critical_wards || 0
+  };
 }
 
 /**
  * Generate intelligent local response based on query + live data
  */
-function generateLocalResponse(message, wardContext, currentAqi) {
-  const ctx = parseWardContext(wardContext);
+function generateLocalResponse(message, currentAqi) {
+  const ctx = getDynamicContext();
   const query = message.toLowerCase();
-  const avgAqi = ctx.cityAvg || currentAqi || 0;
+  const avgAqi = ctx.cityAvg || currentAqi || 100;
   const level = getAqiLevel(avgAqi);
   const levelKey = getAqiLevelKey(avgAqi);
 
@@ -104,15 +79,68 @@ function generateLocalResponse(message, wardContext, currentAqi) {
   const worstWard = sortedWards[0];
   const bestWard = sortedWards[sortedWards.length - 1];
 
-  // ── Query: Ward 6 / critical / why ──────────────────────
-  if (query.includes('ward 6') || query.includes('industrial') || query.includes('why') && query.includes('critical')) {
-    const ward6 = ctx.wards.find(w => w.name.toLowerCase().includes('industrial') || w.name.toLowerCase().includes('ward 6'));
+  // ── Query: Greetings ─────────────────────────────────
+  if (query.match(/^(hi|hello|hey|greetings|morning|evening|afternoon)/)) {
+    return `👋 Hello! I'm **GovAir AI**, your official real-time assistant. I'm currently monitoring ${ctx.wards.length} wards across the city.\n\nThe city average AQI is currently **${avgAqi}** (${level}).\n\nYou can ask me about:\n• Current air quality in specific wards\n• Health advice for sensitive groups\n• Active government rules and restrictions\n• What to do during a pollution spike\n\nHow can I help you today?`;
+  }
+
+  // ── Query: who are you / what is this ──────────────────
+  if (query.includes('who are you') || query.includes('what are you') || query.includes('purpose') || query.includes('what is this')) {
+    return `🤖 I am **GovAir AI**, an intelligent bridging system connected directly to the **Pathway Streaming Engine**.\n\nUnlike traditional bots, I consume a live sub-second stream of sensor data to provide factual, government-verified air quality information. I can help you navigate local pollution levels, understand health impacts, and view active enforcement actions.`;
+  }
+
+  // ── Query: PM2.5 / PM10 / pollutants ────────────────────
+  if (query.includes('pm2') || query.includes('pm10') || query.includes('pollutant') || query.includes('no2') || query.includes('carbon')) {
+    const pWard = worstWard || ctx.wards[0];
+    return `🧪 **Pollutant Analysis**\n\nIn the most affected ward (**${pWard.ward_name}**), our sensors are currently detecting:\n• **PM2.5**: ${pWard.pm25} µg/m³\n• **PM10**: ${pWard.pm10} µg/m³\n• **NO2**: ${pWard.no2 || 'N/A'} µg/m³\n\n**Note:** PM2.5 is especially hazardous as these fine particles can enter the bloodstream. The current levels in ${pWard.ward_id} are ${pWard.aqi > 150 ? 'above' : 'within'} safety limits.`;
+  }
+
+  // ── Query: rules / construction / industry / restriction ──
+  if (query.includes('rule') || query.includes('restriction') || query.includes('construction') || query.includes('industr') || query.includes('grap')) {
+    const activeRules = GOVT_RULES.filter(r => (ctx.cityMax || avgAqi) > r.threshold);
+    let response = `⚖️ **Government Regulations & GRAP Rules**\n\n`;
+    if (activeRules.length > 0) {
+      response += `**CURRENTLY ACTIVE:**\n`;
+      activeRules.forEach(r => { response += `✅ ${r.rule}\n`; });
+    } else {
+      response += `Currently, there are no emergency restrictions. However, the standing rules are:\n`;
+      GOVT_RULES.forEach(r => { response += `• >${r.threshold} AQI: ${r.rule}\n`; });
+    }
+    return response;
+  }
+
+  // ── Query: highest / worst / max ──────────────────────
+  if (query.includes('highest') || query.includes('worst') || query.includes('max')) {
+    if (worstWard) {
+      return `🚩 The highest AQI in the city is currently in **${worstWard.ward_name}** with a reading of **${worstWard.aqi}** (${worstWard.aqi_level || getAqiLevel(worstWard.aqi)}).\n\nThis is ${worstWard.aqi > 200 ? 'significantly' : 'moderately'} above the city average of ${avgAqi}. Residents in this area should follow "Severe" air quality precautions.`;
+    }
+  }
+
+  // ── Query: lowest / best / clean ───────────────────────
+  if (query.includes('lowest') || query.includes('best') || query.includes('clean') || query.includes('safest')) {
+    if (bestWard) {
+      return `✅ The lowest (best) air quality is currently in **${bestWard.ward_name}** with an AQI of **${bestWard.aqi}** (${bestWard.aqi_level || getAqiLevel(bestWard.aqi)}).\n\nThis ward is currently the safest area in the city regarding air pollution levels.`;
+    }
+  }
+
+  // ── Query: how many / count / critical ──────────────────
+  if ((query.includes('how many') || query.includes('count')) && (query.includes('critical') || query.includes('ward'))) {
+    const count = ctx.criticalCount;
+    if (count === 0) {
+      return `Currently, there are **no wards** in the critical zone (AQI > 150). All ${ctx.wards.length} monitored wards are performing within acceptable parameters relative to emergency thresholds.`;
+    }
+    return `There are currently **${count} critical wards** out of ${ctx.wards.length} total monitored wards. These wards have AQI levels exceeding 150 and require active monitoring or intervention.`;
+  }
+
+  // ── Query: Ward 6 / industrial / why ──────────────────────
+  if (query.includes('ward 6') || query.includes('industrial') || (query.includes('why') && query.includes('critical'))) {
+    const ward6 = ctx.wards.find(w => w.ward_name.toLowerCase().includes('industrial') || w.ward_name.toLowerCase().includes('ward 6'));
     if (ward6) {
       const guideline = WHO_GUIDELINES[getAqiLevelKey(ward6.aqi)];
       const rules = GOVT_RULES.filter(r => ward6.aqi > r.threshold);
-      let response = `📊 **${ward6.name}** — Current Status\n\n`;
-      response += `• AQI: **${ward6.aqi}** (${ward6.level})\n`;
-      response += `• Rolling Average: ${ward6.avg}\n`;
+      let response = `📊 **${ward6.ward_name}** — Current Status\n\n`;
+      response += `• AQI: **${ward6.aqi}** (${ward6.aqi_level || getAqiLevel(ward6.aqi)})\n`;
+      response += `• Rolling Average: ${ward6.rolling_avg || ward6.avg}\n`;
       if (ward6.spike) response += `• ⚡ **SPIKE DETECTED** — AQI is rising rapidly\n`;
       response += `\n🏥 **WHO Advisory (${guideline.range}):**\n${guideline.advice}\n`;
       if (rules.length > 0) {
@@ -125,7 +153,7 @@ function generateLocalResponse(message, wardContext, currentAqi) {
   }
 
   // ── Query: elderly / health / what should ──────────────
-  if (query.includes('elderly') || query.includes('old') || query.includes('health') || query.includes('should')) {
+  if (query.includes('elderly') || query.includes('old') || query.includes('health') || query.includes('should') || query.includes('mask') || query.includes('advice')) {
     let elderlyKey = '100';
     if (avgAqi >= 300) elderlyKey = '300';
     else if (avgAqi >= 200) elderlyKey = '200';
@@ -148,7 +176,7 @@ function generateLocalResponse(message, wardContext, currentAqi) {
   }
 
   // ── Query: emergency / action / which wards ────────────
-  if (query.includes('emergency') || query.includes('action') || query.includes('which ward')) {
+  if (query.includes('emergency') || query.includes('action') || query.includes('problem') || query.includes('danger')) {
     if (criticalWards.length === 0) {
       return `✅ **No Emergency Action Required**\n\nAll ${ctx.wards.length} wards are currently within acceptable AQI thresholds (below 150). The city average AQI is ${avgAqi} (${level}).\n\n📊 Continue monitoring — the Pathway Engine is tracking all wards in real-time.`;
     }
@@ -158,7 +186,7 @@ function generateLocalResponse(message, wardContext, currentAqi) {
 
     criticalWards.forEach(w => {
       const rules = GOVT_RULES.filter(r => w.aqi > r.threshold);
-      response += `**${w.name}** — AQI ${w.aqi} (${w.level})${w.spike ? ' ⚡SPIKE' : ''}\n`;
+      response += `**${w.ward_name}** — AQI ${w.aqi} (${w.aqi_level})${w.spike ? ' ⚡SPIKE' : ''}\n`;
       rules.forEach(r => { response += `  → ${r.rule}\n`; });
       response += `\n`;
     });
@@ -175,7 +203,7 @@ function generateLocalResponse(message, wardContext, currentAqi) {
   }
 
   // ── Query: summarize / summary / overview ──────────────
-  if (query.includes('summar') || query.includes('overview') || query.includes('current') || query.includes('air quality')) {
+  if (query.includes('summar') || query.includes('overview') || query.includes('current') || query.includes('air quality') || query.includes('status') || query.includes('today')) {
     const guideline = WHO_GUIDELINES[levelKey];
     let response = `📊 **City Air Quality Summary**\n\n`;
     response += `• **City Average AQI:** ${avgAqi} (${level})\n`;
@@ -186,7 +214,7 @@ function generateLocalResponse(message, wardContext, currentAqi) {
       response += `📍 **Ward Breakdown:**\n`;
       sortedWards.forEach(w => {
         const indicator = w.aqi > 200 ? '🔴' : w.aqi > 150 ? '🟠' : w.aqi > 100 ? '🟡' : '🟢';
-        response += `${indicator} ${w.name}: AQI ${w.aqi} (${w.level})${w.spike ? ' ⚡' : ''}\n`;
+        response += `${indicator} ${w.ward_name}: AQI ${w.aqi} (${w.aqi_level || getAqiLevel(w.aqi)})${w.spike ? ' ⚡' : ''}\n`;
       });
     }
 
@@ -200,7 +228,7 @@ function generateLocalResponse(message, wardContext, currentAqi) {
 
     if (ctx.alerts.length > 0) {
       response += `\n🚨 **Active Alerts:**\n`;
-      ctx.alerts.forEach(a => { response += `• ${a.ward}: ${a.severity} (AQI ${a.aqi})\n`; });
+      ctx.alerts.forEach(a => { response += `• ${a.ward_name || a.ward}: ${a.severity} (AQI ${a.aqi})\n`; });
     }
 
     response += `\n💡 **Recommendation:** ${avgAqi > 200 ? 'Limit outdoor exposure. Vulnerable groups should stay indoors.' : avgAqi > 100 ? 'Sensitive individuals should limit prolonged outdoor exertion.' : 'Air quality is acceptable for most activities.'}`;
@@ -208,110 +236,60 @@ function generateLocalResponse(message, wardContext, currentAqi) {
     return response;
   }
 
+
   // ── Default: general response ──────────────────────────
   const guideline = WHO_GUIDELINES[levelKey];
-  let response = `📊 **GovAir AI — Air Quality Analysis**\n\n`;
-  response += `Regarding your query: "${message}"\n\n`;
-  response += `**Current Conditions:**\n`;
-  response += `• City Average AQI: **${avgAqi}** (${level})\n`;
-  if (worstWard) response += `• Highest AQI: ${worstWard.name} at **${worstWard.aqi}**\n`;
-  if (bestWard) response += `• Lowest AQI: ${bestWard.name} at **${bestWard.aqi}**\n`;
-  response += `• Critical Wards: ${ctx.criticalCount}/${ctx.wards.length}\n\n`;
-  response += `🏥 **WHO Assessment:**\n${guideline.advice}\n\n`;
 
-  if (avgAqi > 150) {
-    const rules = GOVT_RULES.filter(r => avgAqi > r.threshold);
-    if (rules.length > 0) {
-      response += `⚖️ **Active Government Directives:**\n`;
-      rules.forEach(r => { response += `• ${r.rule}\n`; });
-    }
+  // If we've reached here and it's not a specific AQI query, 
+  // try to be a bit more general but keep the data context.
+
+  let response = `🤖 **GovAir Assistant** (Fallback Mode)\n\n`;
+
+  if (query.includes('help') || query.includes('what can you do')) {
+    response += `I am a real-time air quality assistant. Currently, my "Proper AI" (Gemini) is offline, so I'm running in restricted mode.\n\nI can answer anything about:\n• City AQI status\n• Ward-specific pollution\n• Health advisories\n• Government rules\n\nFor general questions about other topics, please try again when my AI engine is reconnected!`;
+    return response;
   }
 
-  response += `\n💡 For specific information, try asking:\n• "Why is Ward 6 critical?"\n• "What should elderly people do?"\n• "Which wards need emergency action?"\n• "Summarize current air quality"`;
+  response += `I'm analyzing the live stream for: "${message}"\n\n`;
+
+  if (avgAqi > 200) {
+    response += `⚠️ **Notice:** The city is currently experiencing **${level}** air quality. My analysis shows that several wards (including ${worstWard?.ward_name}) are in the red zone.\n\n`;
+  } else {
+    response += `The city-wide air quality is currently **${level}** (AQI ${avgAqi}).\n\n`;
+  }
+
+  response += `Regarding your question, I can provide specific insights on:\n`;
+  response += `• **Health**: ${guideline.advice.substring(0, 100)}...\n`;
+  response += `• **Hotspots**: ${worstWard?.ward_name} is the most polluted right now.\n`;
+  response += `• **Rules**: ${ctx.cityMax > 200 ? 'Construction is restricted.' : 'No major restrictions active.'}\n\n`;
+  response += `Is there something specific about the current AQI or a ward you'd like to know?`;
 
   return response;
 }
+
 
 
 // ─────────────────────────────────────────────────────────
 //  Role-based system prompts (for Gemini when available)
 // ─────────────────────────────────────────────────────────
 const getSystemPrompt = (userRole, context) => {
-  const { ward_id, city, current_aqi, predicted_aqi, source_contribution, health_data } = context;
+  const { ward_id, city, current_aqi, live_wards } = context;
 
-  const basePrompt = `You are "GovAir AI" — an official AI assistant for the Government Air Quality & Pollution Management Platform.
+  return `You are "GovAir AI", a helpful and intelligent AI assistant. 
+While you are part of the Government Air Quality platform, you are capable of assisting with ANY question or task the user has.
 
-You operate inside a GOVERNMENT SYSTEM.
-
-Your purpose is to:
-• Inform citizens
-• Assist government officers
-• Support policy makers
-• Explain air quality data using verified sources
-• NEVER speculate
-• NEVER provide political opinions
-• NEVER override government authority
-• ALWAYS stay factual, neutral, and explainable
-
-You must strictly follow ROLE-BASED BEHAVIOR.
-
-Current Context:
+Context:
 - City: ${city || 'Delhi'}
 - User Role: ${userRole}
-${ward_id ? `- Ward ID: ${ward_id}` : ''}
-${current_aqi ? `- Current AQI: ${current_aqi}` : ''}
-${predicted_aqi ? `- Predicted AQI: ${JSON.stringify(predicted_aqi)}` : ''}
-${source_contribution ? `- Source Contribution: ${JSON.stringify(source_contribution)}` : ''}
-${health_data ? `- Health Data: ${JSON.stringify(health_data)}` : ''}
+- Current City AQI: ${current_aqi || 'N/A'}
+- Live Ward Data: ${JSON.stringify(live_wards || [])}
 
-`;
-
-  switch (userRole.toLowerCase()) {
-    case 'public':
-      return basePrompt + `You are speaking to a PUBLIC USER (not logged in).
-- Provide general information about air quality
-- Explain AQI levels and what they mean
-- Share public health advisories
-- Direct users to official resources
-- Do NOT provide personalized data or predictions
-- Keep responses simple and accessible`;
-
-    case 'citizen':
-      return basePrompt + `You are speaking to a REGISTERED CITIZEN.
-- Provide personalized air quality information for their ward
-- Explain current AQI and what it means for their health
-- Share health recommendations based on current conditions
-- Explain predicted AQI trends
-- Guide them on how to report pollution issues
-- Provide actionable advice for reducing personal exposure
-- Explain their ward's pollution sources if available`;
-
-    case 'officer':
-      return basePrompt + `You are speaking to a GOVERNMENT OFFICER.
-- Provide detailed technical air quality data
-- Explain pollution source contributions
-- Assist with data analysis and trends
-- Support decision-making with factual data
-- Explain health impact data for their assigned zones
-- Provide insights for enforcement actions
-- Help interpret prediction models
-- NEVER make policy decisions - only provide data and analysis`;
-
-    case 'admin':
-      return basePrompt + `You are speaking to a GOVERNMENT ADMINISTRATOR.
-- Provide comprehensive system-wide air quality analysis
-- Explain city-wide trends and patterns
-- Support policy simulation analysis
-- Provide detailed source contribution analysis
-- Explain health impact assessments
-- Assist with strategic decision-making
-- Provide data-driven insights for policy planning
-- Explain prediction model outputs in detail
-- NEVER make policy decisions - only provide analysis and recommendations based on data`;
-
-    default:
-      return basePrompt + `Provide general information about air quality and the platform.`;
-  }
+Instructions:
+1. If the user asks about air quality, use the provided live data to give factual, real-time answers.
+2. If the user asks about ANYTHING else (history, science, coding, general conversation, etc.), be a helpful general-purpose AI assistant.
+3. Keep your tone professional but friendly.
+4. If you use the air quality data, mention that it's "live data from the Pathway streaming engine".
+5. Do not feel limited to only air quality topics. You are a "proper AI" and should answer "anything".`;
 };
 
 
@@ -337,45 +315,43 @@ export const chat = async (req, res) => {
     if (apiKey && apiKey !== 'your_api_key_here') {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
+        const liveData = getLatestStreamData();
         const context = {
           ward_id: ward_id || null,
           city: city || 'Delhi',
-          current_aqi: current_aqi || null,
+          current_aqi: current_aqi || liveData?.city_summary?.avg_aqi || null,
           predicted_aqi: predicted_aqi || null,
-          source_contribution: source_contribution || null,
+          source_contribution: source_contribution || liveData?.wards?.[0]?.source_contribution || null,
           health_data: health_data || null,
+          live_wards: liveData?.wards || []
         };
         const systemPrompt = getSystemPrompt(user_role, context);
 
-        const modelOptions = [
-          { model: 'gemini-2.0-flash' },
-          { model: 'gemini-1.5-flash' },
-          { model: 'gemini-1.5-pro' },
-        ];
+        const modelOptions = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
 
-        for (const modelOption of modelOptions) {
+        for (const modelName of modelOptions) {
           try {
-            const model = genAI.getGenerativeModel(modelOption);
-            const fullPrompt = `${systemPrompt}\n\n${ward_context ? `Live Ward Data:\n${ward_context}\n\n` : ''}User Question: ${message}\n\nAssistant Response:`;
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const fullPrompt = `${systemPrompt}\n\nUser Question: ${message}`;
             const result = await model.generateContent(fullPrompt);
             const response = await result.response;
             text = response.text();
-            console.log(`✅ Gemini response via ${modelOption.model}`);
+            console.log(`✅ Gemini response via ${modelName}`);
             break;
           } catch (err) {
-            console.log(`⚠️  Model ${modelOption.model} failed: ${err.message.substring(0, 80)}`);
+            console.error(`⚠️  Model ${modelName} failed: ${err.message}`);
             continue;
           }
         }
       } catch (err) {
-        console.log(`⚠️  Gemini unavailable: ${err.message.substring(0, 80)}`);
+        console.error(`⚠️  Gemini Engine error: ${err.message}`);
       }
     }
 
     // ── FALLBACK: LOCAL RAG ENGINE ──────────────────────────
     if (!text) {
       console.log('🧠 Using local RAG engine (no Gemini API)');
-      text = generateLocalResponse(message, ward_context, current_aqi);
+      text = generateLocalResponse(message, current_aqi);
     }
 
     res.status(200).json({

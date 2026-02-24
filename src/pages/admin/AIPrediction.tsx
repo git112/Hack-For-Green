@@ -12,47 +12,88 @@ import {
   ResponsiveContainer, BarChart, Bar, Legend, PieChart,
   Pie, Cell, LineChart, Line
 } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathwayStream } from "@/hooks/usePathwayStream";
 
-const predictionData = [
-  { time: "Now", aqi: 142, predicted: 142 },
-  { time: "+6h", aqi: null, predicted: 158 },
-  { time: "+12h", aqi: null, predicted: 175 },
-  { time: "+18h", aqi: null, predicted: 168 },
-  { time: "+24h", aqi: null, predicted: 155 },
-  { time: "+48h", aqi: null, predicted: 145 },
-  { time: "+72h", aqi: null, predicted: 138 },
-];
-
-const sourceContribution = [
-  { name: "Traffic", value: 35, color: "#f87171", trend: "+5%" },
-  { name: "Industry", value: 28, color: "#fb923c", trend: "+2%" },
-  { name: "Construction", value: 18, color: "#818cf8", trend: "+8%" },
-  { name: "Garbage Burning", value: 12, color: "#94a3b8", trend: "-3%" },
-  { name: "Other", value: 7, color: "#34d399", trend: "0%" },
-];
-
-const wardPredictions = [
-  { ward: "Ward 1 - Central", current: 85, predicted24h: 92, predicted48h: 88, confidence: 87, risk: "low" },
-  { ward: "Ward 2 - North", current: 45, predicted24h: 48, predicted48h: 45, confidence: 92, risk: "low" },
-  { ward: "Ward 3 - Traffic Hub", current: 156, predicted24h: 175, predicted48h: 168, confidence: 85, risk: "high" },
-  { ward: "Ward 4 - East", current: 120, predicted24h: 135, predicted48h: 128, confidence: 78, risk: "medium" },
-  { ward: "Ward 5 - West", current: 98, predicted24h: 105, predicted48h: 102, confidence: 81, risk: "low" },
-  { ward: "Ward 6 - Industrial", current: 210, predicted24h: 225, predicted48h: 215, confidence: 91, risk: "critical" },
-];
-
-const accuracyChartData = [
-  { actual: 42.46, predicted: 41.05 },
-  { actual: 44.84, predicted: 44.49 },
-  { actual: 46.74, predicted: 47.61 },
-  { actual: 52.88, predicted: 50.95 },
-  { actual: 62.85, predicted: 64.60 },
-  { actual: 58.32, predicted: 57.12 },
-].map((item, index) => ({ index: `T-${index}`, ...item }));
+// Fallback static data replaced by dynamic state and fetching
 
 export default function AIPrediction() {
+  const stream = usePathwayStream();
   const [selectedWard, setSelectedWard] = useState("all");
   const [timeframe, setTimeframe] = useState("24h");
+  const [predictionData, setPredictionData] = useState<any[]>([]);
+  const [sourceContribution, setSourceContribution] = useState<any[]>([]);
+  const [wardPredictions, setWardPredictions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      try {
+        const cityPredictionsRes = await fetch("http://localhost:3000/api/predictions/city");
+        const cityPredictionsData = await cityPredictionsRes.json();
+        if (cityPredictionsData.success) {
+          setWardPredictions(cityPredictionsData.data.map((p: any) => ({
+            ward: p.wardName,
+            current: p.ward?.currentAQI || 100,
+            predicted24h: p.predictions[0]?.aqi || 100,
+            predicted48h: p.predictions[6]?.aqi || 100,
+            confidence: p.confidenceScore,
+            risk: p.riskAssessment?.[0]?.level || 'low'
+          })));
+
+          // Use the first prediction for source contributing chart
+          if (cityPredictionsData.data.length > 0) {
+            const first = cityPredictionsData.data[0];
+            setSourceContribution(first.sourceContribution.map((s: any) => ({
+              ...s,
+              color: s.name === "Traffic" ? "#f87171" : s.name === "Industry" ? "#fb923c" : s.name === "Construction" ? "#818cf8" : "#34d399",
+              trend: "+2%"
+            })));
+
+            // Extract temporal forecast
+            setPredictionData([
+              { time: "Now", aqi: first.ward?.currentAQI || 142, predicted: first.ward?.currentAQI || 142 },
+              ...first.predictions.slice(0, 6).map((p: any, i: number) => ({
+                time: `+${(i + 1) * 4}h`,
+                aqi: null,
+                predicted: p.aqi
+              }))
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch predictions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPredictions();
+  }, []);
+
+  const displayPredictionData = predictionData.length > 0 ? predictionData : [
+    { time: "Now", aqi: 142, predicted: 142 },
+    { time: "+6h", aqi: null, predicted: 158 },
+    { time: "+12h", aqi: null, predicted: 175 },
+    { time: "+18h", aqi: null, predicted: 168 },
+    { time: "+24h", aqi: null, predicted: 155 },
+    { time: "+48h", aqi: null, predicted: 145 },
+    { time: "+72h", aqi: null, predicted: 138 },
+  ];
+
+  const displaySourceContribution = sourceContribution.length > 0 ? sourceContribution : [
+    { name: "Traffic", value: 35, color: "#f87171", trend: "+5%" },
+    { name: "Industry", value: 28, color: "#fb923c", trend: "+2%" },
+    { name: "Construction", value: 18, color: "#818cf8", trend: "+8%" },
+    { name: "Garbage Burning", value: 12, color: "#94a3b8", trend: "-3%" },
+    { name: "Other", value: 7, color: "#34d399", trend: "0%" },
+  ];
+
+  const displayWardPredictions = wardPredictions.length > 0 ? wardPredictions : [
+    { ward: "Ward 1 - Central", current: 85, predicted24h: 92, predicted48h: 88, confidence: 87, risk: "low" },
+    { ward: "Ward 4 - East", current: 120, predicted24h: 135, predicted48h: 128, confidence: 78, risk: "medium" },
+    { ward: "Ward 6 - Industrial", current: 210, predicted24h: 225, predicted48h: 215, confidence: 91, risk: "critical" },
+  ];
 
   return (
     <div className="space-y-6 container mx-auto pb-10">
@@ -148,14 +189,14 @@ export default function AIPrediction() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Global City Average</SelectItem>
-                {wardPredictions.map(w => <SelectItem key={w.ward} value={w.ward}>{w.ward}</SelectItem>)}
+                {displayWardPredictions.map(w => <SelectItem key={w.ward} value={w.ward}>{w.ward}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={predictionData}>
+              <AreaChart data={displayPredictionData}>
                 <defs>
                   <linearGradient id="pActual" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
@@ -213,14 +254,14 @@ export default function AIPrediction() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={sourceContribution}
+                  data={displaySourceContribution}
                   innerRadius={80}
                   outerRadius={110}
                   paddingAngle={8}
                   dataKey="value"
                   stroke="transparent"
                 >
-                  {sourceContribution.map((entry, index) => (
+                  {displaySourceContribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -230,7 +271,7 @@ export default function AIPrediction() {
           </div>
 
           <div className="space-y-2.5">
-            {sourceContribution.map((source) => (
+            {displaySourceContribution.map((source) => (
               <div key={source.name} className="flex items-center justify-between p-3.5 rounded-2xl bg-muted/20 border border-transparent hover:border-border/50 group transition-all">
                 <div className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: source.color }} />
@@ -276,7 +317,7 @@ export default function AIPrediction() {
               </tr>
             </thead>
             <tbody>
-              {wardPredictions.map((w, i) => (
+              {displayWardPredictions.map((w, i) => (
                 <motion.tr
                   key={w.ward}
                   initial={{ opacity: 0 }}

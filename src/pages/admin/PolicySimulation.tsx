@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { usePathwayStream } from "@/hooks/usePathwayStream";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ElementType } from "react";
 import {
@@ -13,7 +14,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AQIBadge } from "@/components/ui/AQIBadge";
+import { TransitionPage } from "@/components/ui/TransitionPage";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
+import { toast } from "@/components/ui/use-toast";
 
 type SimulationAction = {
   id: string;
@@ -32,22 +35,46 @@ const initialActions: SimulationAction[] = [
   { id: "industry", name: "Industry Emission Control", icon: Ban, enabled: false, intensity: 60, impact: -20, cost: 500000 },
 ];
 
-const simulationResults = [
+// Fallback static data moved to state
+const fallbackSimulationResults = [
   { ward: "Ward 1", current: 85, simulated: 72, improvement: -15 },
-  { ward: "Ward 2", current: 45, simulated: 38, improvement: -16 },
-  { ward: "Ward 3", current: 156, simulated: 132, improvement: -15 },
-  { ward: "Ward 4", current: 120, simulated: 105, improvement: -13 },
-  { ward: "Ward 5", current: 98, simulated: 83, improvement: -15 },
   { ward: "Ward 6", current: 210, simulated: 168, improvement: -20 },
 ];
 
 export default function PolicySimulation() {
+  const stream = usePathwayStream();
   const [actions, setActions] = useState<SimulationAction[]>(initialActions);
   const [selectedScenario, setSelectedScenario] = useState("city_wide");
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationComplete, setSimulationComplete] = useState(false);
   const [currentAQI, setCurrentAQI] = useState(142);
   const [simulatedAQI, setSimulatedAQI] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (stream.cityStats) {
+      setCurrentAQI(stream.cityStats.avg_aqi);
+    }
+  }, [stream.cityStats]);
+
+  const simulationResults = useMemo(() => {
+    if (!simulationComplete) return fallbackSimulationResults;
+
+    const enabledActions = actions.filter(a => a.enabled);
+    const totalImpactPercent = enabledActions.reduce((sum, a) => {
+      const impactMultiplier = a.intensity / 100;
+      return sum + (a.impact * impactMultiplier);
+    }, 0);
+
+    return stream.wardsList.map(w => {
+      const simulated = Math.max(0, Math.round(w.aqi * (1 + totalImpactPercent / 100)));
+      return {
+        ward: w.ward_name,
+        current: w.aqi,
+        simulated: simulated,
+        improvement: Math.round(((simulated - w.aqi) / w.aqi) * 100)
+      };
+    }).slice(0, 6); // Limit to 6 for chart clarity
+  }, [simulationComplete, actions, stream.wardsList]);
 
   const toggleAction = (id: string) => {
     setActions(actions.map(a =>
@@ -63,7 +90,7 @@ export default function PolicySimulation() {
     setSimulationComplete(false);
   };
 
-  const runSimulation = () => {
+  const handleExecute = () => {
     setIsSimulating(true);
     setSimulationComplete(false);
 
@@ -78,7 +105,11 @@ export default function PolicySimulation() {
       setSimulatedAQI(newAQI);
       setIsSimulating(false);
       setSimulationComplete(true);
-    }, 1500);
+      toast({
+        title: "Simulation Complete",
+        description: "Policy impact has been projected across all city wards.",
+      });
+    }, 2500);
   };
 
   const resetSimulation = () => {
@@ -97,6 +128,12 @@ export default function PolicySimulation() {
 
   return (
     <div className="space-y-6 container mx-auto pb-10">
+      <TransitionPage
+        isLoading={isSimulating}
+        message="EXECUTING SIMULATION"
+        subMessage="Modeling environmental impact on neural sensor mesh..."
+      />
+
       {/* 🔮 SIMULATION CORE HEADER */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -146,7 +183,7 @@ export default function PolicySimulation() {
         {[
           { label: "Baseline AQI", val: currentAQI, icon: Activity, col: "text-muted-foreground" },
           { label: "Target (Simulated)", val: estimatedAQI, icon: Zap, col: simulationComplete ? "text-emerald-400" : "text-primary", isAnimated: isSimulating },
-          { label: "Est. Deployment Cost", val: `₹${(totalCost / 1000).toFixed(1)}K`, icon: ShieldCheck, col: "text-orange-400" }
+          { label: "Est. Deployment Cost", val: `₹${(totalCost / 1000).toFixed(1)} K`, icon: ShieldCheck, col: "text-orange-400" }
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -164,12 +201,12 @@ export default function PolicySimulation() {
                 <motion.h4
                   key={stat.val}
                   initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-                  className={`text-4xl font-black font-mono tracking-tighter ${stat.col}`}
+                  className={`text - 4xl font - black font - mono tracking - tighter ${stat.col} `}
                 >
                   {stat.isAnimated ? "..." : stat.val}
                 </motion.h4>
               ) : (
-                <h4 className={`text-4xl font-black font-mono tracking-tighter ${stat.col}`}>{stat.val}</h4>
+                <h4 className={`text - 4xl font - black font - mono tracking - tighter ${stat.col} `}>{stat.val}</h4>
               )}
               {stat.label.includes("Target") && simulationComplete && simulatedAQI! < currentAQI && (
                 <div className="bg-emerald-500/10 text-emerald-400 p-2 py-1 rounded-lg text-xs font-black border border-emerald-500/20">
@@ -211,12 +248,12 @@ export default function PolicySimulation() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + (i * 0.05) }}
-                    className={`p-5 rounded-3xl border-2 transition-all duration-500 group relative overflow-hidden ${action.enabled ? "border-primary bg-primary/5 shadow-xl shadow-primary/5" : "border-border/30 bg-muted/10"
-                      }`}
+                    className={`p - 5 rounded - 3xl border - 2 transition - all duration - 500 group relative overflow - hidden ${action.enabled ? "border-primary bg-primary/5 shadow-xl shadow-primary/5" : "border-border/30 bg-muted/10"
+                      } `}
                   >
                     <div className="flex items-center justify-between mb-4 relative z-10">
                       <div className="flex items-center gap-4">
-                        <div className={`p-4 rounded-2xl shadow-inner transition-colors ${action.enabled ? "bg-primary text-white" : "bg-card text-muted-foreground"}`}>
+                        <div className={`p - 4 rounded - 2xl shadow - inner transition - colors ${action.enabled ? "bg-primary text-white" : "bg-card text-muted-foreground"} `}>
                           <Icon className="w-6 h-6" />
                         </div>
                         <div>
@@ -268,7 +305,7 @@ export default function PolicySimulation() {
 
             <div className="mt-8">
               <Button
-                onClick={runSimulation}
+                onClick={handleExecute}
                 disabled={isSimulating || enabledActions.length === 0}
                 className="w-full h-16 rounded-[1.5rem] bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 relative overflow-hidden group"
               >
@@ -305,13 +342,13 @@ export default function PolicySimulation() {
               <div className="space-y-4">
                 {[
                   { l: "Selected Actions", v: enabledActions.length, c: "text-foreground" },
-                  { l: "Aggregated Cost", v: `₹${totalCost.toLocaleString()}`, c: "text-orange-400" },
-                  { l: "AQI Delta", v: `${totalImpact > 0 ? "+" : ""}${Math.round(totalImpact)}`, c: totalImpact < 0 ? "text-emerald-400" : "text-destructive" },
+                  { l: "Aggregated Cost", v: `₹${totalCost.toLocaleString()} `, c: "text-orange-400" },
+                  { l: "AQI Delta", v: `${totalImpact > 0 ? "+" : ""}${Math.round(totalImpact)} `, c: totalImpact < 0 ? "text-emerald-400" : "text-destructive" },
                   { l: "Projected Result", v: estimatedAQI, c: "text-primary font-mono text-xl" }
                 ].map(r => (
                   <div key={r.l} className="flex justify-between items-center py-3 border-b border-border/30 last:border-0 hover:translate-x-1 transition-transform">
                     <span className="text-xs font-bold text-muted-foreground">{r.l}</span>
-                    <span className={`text-sm font-black ${r.c}`}>{r.v}</span>
+                    <span className={`text - sm font - black ${r.c} `}>{r.v}</span>
                   </div>
                 ))}
 
@@ -319,17 +356,17 @@ export default function PolicySimulation() {
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className={`mt-6 p-5 rounded-3xl border-2 flex gap-4 items-start ${simulatedAQI! < currentAQI ? "bg-emerald-500/10 border-emerald-500/20" : "bg-orange-500/10 border-orange-500/20"
-                      }`}
+                    className={`mt - 6 p - 5 rounded - 3xl border - 2 flex gap - 4 items - start ${simulatedAQI! < currentAQI ? "bg-emerald-500/10 border-emerald-500/20" : "bg-orange-500/10 border-orange-500/20"
+                      } `}
                   >
-                    <AlertTriangle className={`w-6 h-6 flex-shrink-0 mt-1 ${simulatedAQI! < currentAQI ? "text-emerald-400" : "text-orange-400"}`} />
+                    <AlertTriangle className={`w - 6 h - 6 flex - shrink - 0 mt - 1 ${simulatedAQI! < currentAQI ? "text-emerald-400" : "text-orange-400"} `} />
                     <div>
                       <p className="text-sm font-black uppercase tracking-tight mb-1">
                         {simulatedAQI! < currentAQI ? "Policy Approved" : "Intervention Warning"}
                       </p>
                       <p className="text-xs leading-relaxed opacity-70 font-medium text-foreground">
                         {simulatedAQI! < currentAQI
-                          ? `This configuration shows a ${Math.abs(Math.round(totalImpact))}pt reduction. Efficient deployment recommended.`
+                          ? `This configuration shows a ${Math.abs(Math.round(totalImpact))}pt reduction.Efficient deployment recommended.`
                           : "Simulation indicates rising trends despite intervention. Re-evaluate industrial emission controls."}
                       </p>
                     </div>
@@ -391,7 +428,7 @@ export default function PolicySimulation() {
                   <Bar dataKey="current" fill="#4b5563" radius={[8, 8, 0, 0]} name="Baseline AQI" />
                   <Bar dataKey="simulated" radius={[8, 8, 0, 0]} name="Policy Impact AQI">
                     {simulationResults.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.simulated < entry.current ? 'hsl(var(--primary))' : '#f87171'} />
+                      <Cell key={`cell - ${index} `} fill={entry.simulated < entry.current ? 'hsl(var(--primary))' : '#f87171'} />
                     ))}
                   </Bar>
                 </BarChart>

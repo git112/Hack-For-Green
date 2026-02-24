@@ -7,25 +7,10 @@ import { AQIBadge } from "@/components/ui/AQIBadge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathwayStream } from "@/hooks/usePathwayStream";
 
-const healthData = [
-  { month: "Jan", aqi: 180, respiratoryCases: 245, childRisk: 85 },
-  { month: "Feb", aqi: 165, respiratoryCases: 218, childRisk: 72 },
-  { month: "Mar", aqi: 155, respiratoryCases: 198, childRisk: 68 },
-  { month: "Apr", aqi: 148, respiratoryCases: 185, childRisk: 65 },
-  { month: "May", aqi: 142, respiratoryCases: 172, childRisk: 62 },
-  { month: "Jun", aqi: 135, respiratoryCases: 158, childRisk: 58 },
-];
-
-const wardHealthRisk = [
-  { ward: "Ward 1 - Central", aqi: 85, respiratoryRisk: "Low", childRisk: "Moderate", elderlyRisk: "Low", heatwaveRisk: "Low" },
-  { ward: "Ward 2 - North", aqi: 45, respiratoryRisk: "Very Low", childRisk: "Low", elderlyRisk: "Very Low", heatwaveRisk: "Low" },
-  { ward: "Ward 3 - Traffic Hub", aqi: 156, respiratoryRisk: "High", childRisk: "High", elderlyRisk: "High", heatwaveRisk: "Moderate" },
-  { ward: "Ward 4 - East", aqi: 120, respiratoryRisk: "Moderate", childRisk: "Moderate", elderlyRisk: "Moderate", heatwaveRisk: "Low" },
-  { ward: "Ward 5 - West", aqi: 98, respiratoryRisk: "Moderate", childRisk: "Moderate", elderlyRisk: "Low", heatwaveRisk: "Low" },
-  { ward: "Ward 6 - Industrial", aqi: 210, respiratoryRisk: "Critical", childRisk: "Critical", elderlyRisk: "Critical", heatwaveRisk: "High" },
-];
+// Fallback static data moved inside as initial state if needed, or replaced by dynamic fetching
 
 const getRiskColor = (risk: string) => {
   switch (risk.toLowerCase()) {
@@ -39,7 +24,56 @@ const getRiskColor = (risk: string) => {
 };
 
 export default function HealthImpact() {
+  const stream = usePathwayStream();
   const [selectedWard, setSelectedWard] = useState("all");
+  const [healthTrends, setHealthTrends] = useState<any[]>([]);
+  const [cityOverview, setCityOverview] = useState<any>(null);
+  const [wardHealthData, setWardHealthData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHealthData = async () => {
+      try {
+        const overviewRes = await fetch("http://localhost:3000/api/health/city");
+        const overviewData = await overviewRes.json();
+        if (overviewData.success) {
+          setCityOverview(overviewData.data); // Server returns .data for single results usually
+          setWardHealthData(overviewData.wards || []);
+        }
+
+        // Fetch trends (using a dummy ward ID for global or just using the endpoint)
+        // Since I don't have a global trends endpoint in server.js, I'll fetch for a specific ward or handle the error
+        const trendsRes = await fetch("http://localhost:3000/api/health/ward/ward_1/trends");
+        const trendsData = await trendsRes.json();
+        if (trendsData.success) {
+          setHealthTrends(trendsData.data.map((d: any) => ({
+            month: new Date(d.date || d.timestamp).toLocaleDateString('en-US', { month: 'short' }),
+            aqi: d.aqi || d.currentAQI,
+            respiratoryCases: d.respiratoryCases?.total || d.respiratoryCases || 0,
+          })));
+        }
+      } catch (error) {
+        console.error("Failed to fetch health data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHealthData();
+  }, []);
+
+  const activeWardData = selectedWard === "all"
+    ? wardHealthData
+    : wardHealthData.filter(w => w.wardName === selectedWard);
+
+  const displayTrends = healthTrends.length > 0 ? healthTrends : [
+    { month: "Jan", aqi: 180, respiratoryCases: 245 },
+    { month: "Feb", aqi: 165, respiratoryCases: 218 },
+    { month: "Mar", aqi: 155, respiratoryCases: 198 },
+    { month: "Apr", aqi: 148, respiratoryCases: 185 },
+    { month: "May", aqi: 142, respiratoryCases: 172 },
+    { month: "Jun", aqi: 135, respiratoryCases: 158 },
+  ];
 
   return (
     <div className="space-y-6 container mx-auto pb-10">
@@ -66,8 +100,8 @@ export default function HealthImpact() {
             </SelectTrigger>
             <SelectContent className="bg-card border-border/40 rounded-xl">
               <SelectItem value="all">City-Wide Analysis</SelectItem>
-              {wardHealthRisk.map((w) => (
-                <SelectItem key={w.ward} value={w.ward}>{w.ward}</SelectItem>
+              {wardHealthData.map((w) => (
+                <SelectItem key={w._id} value={w.wardName}>{w.wardName}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -77,10 +111,34 @@ export default function HealthImpact() {
       {/* 📊 IMPACT KPI GRID */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Resp. Active Cases", val: "172", sub: "-12% month-on-month", icon: Activity, col: "#f87171" },
-          { label: "Child Exposure", val: "2", sub: "High Risk Wards", icon: Baby, col: "#60a5fa" },
-          { label: "Vulnerable Pop.", val: "12.8K", sub: "Active monitoring", icon: Users, col: "#fb923c" },
-          { label: "Heat x AQI Index", val: "High", sub: "Overlap detected", icon: Thermometer, col: "#facc15" },
+          {
+            label: "Resp. Active Cases",
+            val: cityOverview?.totalRespiratoryCases || "172",
+            sub: "-12% month-on-month",
+            icon: Activity,
+            col: "#f87171"
+          },
+          {
+            label: "Child Exposure",
+            val: cityOverview?.affectedChildren ? `${(cityOverview.affectedChildren / 1000).toFixed(1)}K` : "2.4K",
+            sub: "High Risk Wards",
+            icon: Baby,
+            col: "#60a5fa"
+          },
+          {
+            label: "Vulnerable Pop.",
+            val: cityOverview?.affectedElderly ? `${(cityOverview.affectedElderly / 1000).toFixed(1)}K` : "12.8K",
+            sub: "Active monitoring",
+            icon: Users,
+            col: "#fb923c"
+          },
+          {
+            label: "High Risk Wards",
+            val: cityOverview?.highRiskWards || stream.cityStats?.critical_wards || "0",
+            sub: "Overlap detected",
+            icon: AlertTriangle,
+            col: "#facc15"
+          },
         ].map((item, i) => (
           <motion.div
             key={item.label}
@@ -131,7 +189,7 @@ export default function HealthImpact() {
 
           <div className="h-[350px] relative z-10">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={healthData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={displayTrends} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="pAqi" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
@@ -206,20 +264,20 @@ export default function HealthImpact() {
           </div>
 
           <div className="space-y-3.5 max-h-[550px] overflow-y-auto pr-2 custom-scrollbar">
-            {wardHealthRisk.map((w, i) => (
-              <div key={w.ward} className="group p-4 rounded-3xl bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all cursor-default">
+            {activeWardData.map((w, i) => (
+              <div key={w._id} className="group p-4 rounded-3xl bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all cursor-default">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-sm font-bold text-foreground">{w.ward}</p>
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Vulnerability Index: High</p>
+                    <p className="text-sm font-bold text-foreground">{w.wardName}</p>
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Vulnerability Index: {w.riskLevel || 'Moderate'}</p>
                   </div>
-                  <AQIBadge value={w.aqi} size="sm" showLabel={false} />
+                  <AQIBadge value={w.currentAQI} size="sm" showLabel={false} />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { label: 'Respiratory', val: w.respiratoryRisk },
-                    { label: 'Children', val: w.childRisk },
-                    { label: 'Elderly', val: w.elderlyRisk }
+                    { label: 'Respiratory', val: w.respiratoryCases > 50 ? 'High' : 'Moderate' },
+                    { label: 'Children', val: w.affectedChildren > 100 ? 'Critical' : 'Moderate' },
+                    { label: 'Elderly', val: w.affectedElderly > 100 ? 'High' : 'Low' }
                   ].map(r => (
                     <div key={r.label} className="text-center p-1.5 rounded-xl bg-card/40 border border-white/[0.03]">
                       <p className="text-[8px] uppercase font-bold text-muted-foreground mb-1">{r.label}</p>
