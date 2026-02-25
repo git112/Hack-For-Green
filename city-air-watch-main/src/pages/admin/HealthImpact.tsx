@@ -107,7 +107,7 @@ export default function HealthImpact() {
   useEffect(() => {
     const fetchHealthData = async () => {
       try {
-        const overviewRes = await fetch("import.meta.env.VITE_API_URL/api/health/city");
+        const overviewRes = await fetch(`${import.meta.env.VITE_API_URL}/api/health/city`);
         const overviewData = await overviewRes.json();
         if (overviewData.success) {
           setCityOverview(overviewData.data); // Server returns .data for single results usually
@@ -116,7 +116,7 @@ export default function HealthImpact() {
 
         // Fetch trends (using a dummy ward ID for global or just using the endpoint)
         // Since I don't have a global trends endpoint in server.js, I'll fetch for a specific ward or handle the error
-        const trendsRes = await fetch("import.meta.env.VITE_API_URL/api/health/ward/ward_1/trends");
+        const trendsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/health/ward/ward_1/trends`);
         const trendsData = await trendsRes.json();
         if (trendsData.success) {
           setHealthTrends(trendsData.data.map((d: any) => ({
@@ -178,6 +178,18 @@ export default function HealthImpact() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="h-11 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold no-export shadow-lg shadow-red-500/20 px-6"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {isExporting ? "Generating..." : "Download Gov Health Report (PDF)"}
+          </Button>
         </div>
       </motion.div>
 

@@ -12,8 +12,12 @@ import {
   ResponsiveContainer, BarChart, Bar, Legend, PieChart,
   Pie, Cell, LineChart, Line
 } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathwayStream } from "@/hooks/usePathwayStream";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { useToast } from "@/hooks/use-toast";
+import { Download, Loader2 } from "lucide-react";
 
 // Fallback static data replaced by dynamic state and fetching
 
@@ -25,11 +29,84 @@ export default function AIPrediction() {
   const [sourceContribution, setSourceContribution] = useState<any[]>([]);
   const [wardPredictions, setWardPredictions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+
+    setIsExporting(true);
+    toast({
+      title: "Generating AI Forecast Report",
+      description: "Capturing neural predictions...",
+    });
+
+    try {
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#0a0c10", // Dark background for AI prediction look
+        logging: false,
+        onclone: (clonedDoc) => {
+          const elementsToHide = clonedDoc.querySelectorAll('.no-export');
+          elementsToHide.forEach(el => {
+            (el as HTMLElement).style.visibility = 'hidden';
+          });
+        }
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.9);
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 60) / imgHeight);
+
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+
+      pdf.setFillColor(10, 12, 16);
+      pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
+
+      pdf.setFontSize(22);
+      pdf.setTextColor(99, 102, 241); // Indigo color for AI
+      pdf.text("AI PREDICTION & NEURAL FORECAST", 105, 20, { align: "center" });
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text(`AI Model: Neural Forecaster v4.0.1`, 15, 30);
+      pdf.text(`Prediction Window: ${timeframe}`, 15, 35);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 15, 40);
+
+      pdf.addImage(imgData, "JPEG", (pdfWidth - finalWidth) / 2, 50, finalWidth, finalHeight);
+
+      pdf.save(`AI_Prediction_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: "Export Success",
+        description: "AI foresight report downloaded.",
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({
+        title: "Export Failed",
+        description: "Could not generate AI report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
-        const cityPredictionsRes = await fetch("import.meta.env.VITE_API_URL/api/predictions/city");
+        const cityPredictionsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/predictions/city`);
         const cityPredictionsData = await cityPredictionsRes.json();
         if (cityPredictionsData.success) {
           setWardPredictions(cityPredictionsData.data.map((p: any) => ({
@@ -96,7 +173,7 @@ export default function AIPrediction() {
   ];
 
   return (
-    <div className="space-y-6 container mx-auto pb-10">
+    <div className="space-y-6 container mx-auto pb-10" ref={dashboardRef}>
       {/* 🧠 AI MASTER HEADER */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -125,7 +202,7 @@ export default function AIPrediction() {
             <span className="text-[10px] font-black text-muted-foreground uppercase opacity-60 tracking-widest">Temporal Window</span>
           </div>
           <Select value={timeframe} onValueChange={setTimeframe}>
-            <SelectTrigger className="w-44 h-11 bg-card/60 backdrop-blur-xl border-border/40 rounded-2xl">
+            <SelectTrigger className="w-44 h-11 bg-card/60 backdrop-blur-xl border-border/40 rounded-2xl shadow-sm no-export">
               <Clock className="w-4 h-4 mr-2 text-primary" />
               <SelectValue />
             </SelectTrigger>
@@ -135,6 +212,18 @@ export default function AIPrediction() {
               <SelectItem value="72h">Next 72 Hours</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black no-export shadow-xl shadow-indigo-500/20 px-8 flex gap-2 italic uppercase tracking-tighter"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {isExporting ? "Capturing..." : "Export Neural Data"}
+          </Button>
         </div>
       </motion.div>
 

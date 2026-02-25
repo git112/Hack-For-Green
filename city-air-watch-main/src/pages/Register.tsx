@@ -228,14 +228,46 @@ export default function Register() {
                     }
                     setLoading(true);
                     navigator.geolocation.getCurrentPosition((pos) => {
-                      // Logic to pick closest ward could go here
-                      // For now, let's just pick Ward 1 and notify
-                      setFormData(prev => ({ ...prev, ward: "Ward 1 - Central" }));
+                      const { latitude, longitude } = pos.coords;
+
+                      const wardCoords: Record<string, { lat: number, lng: number }> = {
+                        "Ward 1 - Central": { lat: 28.6139, lng: 77.2090 },
+                        "Ward 2 - North": { lat: 28.7041, lng: 77.2090 },
+                        "Ward 3 - South": { lat: 28.5245, lng: 77.2090 },
+                        "Ward 4 - East": { lat: 28.6304, lng: 77.2925 },
+                        "Ward 5 - West": { lat: 28.6304, lng: 77.1000 },
+                        "Ward 6 - Industrial": { lat: 28.7500, lng: 77.1000 },
+                        "Ward 7 - Residential": { lat: 28.5500, lng: 77.1500 },
+                        "Ward 8 - Commercial": { lat: 28.6500, lng: 77.2500 }
+                      };
+
+                      let closestWard = "Ward 1 - Central";
+                      let minDistance = Infinity;
+
+                      Object.entries(wardCoords).forEach(([name, coords]) => {
+                        const dist = Math.sqrt(
+                          Math.pow(latitude - coords.lat, 2) +
+                          Math.pow(longitude - coords.lng, 2)
+                        );
+                        if (dist < minDistance) {
+                          minDistance = dist;
+                          closestWard = name;
+                        }
+                      });
+
+                      setFormData(prev => ({
+                        ...prev,
+                        ward: userType === "citizen" ? closestWard : prev.ward,
+                        zone: userType === "government" ? "Zone A - Central" : prev.zone // Simple fallback for zone
+                      }));
                       setLoading(false);
-                      toast({ title: "Location Detected", description: "Auto-selected nearest ward: Ward 1" });
+                      toast({
+                        title: "Location Detected! 📍",
+                        description: `Auto-selected nearest ward: ${closestWard}`
+                      });
                     }, () => {
                       setLoading(false);
-                      toast({ title: "Location Error", description: "Could not detect location", variant: "destructive" });
+                      toast({ title: "Location Error", description: "Could not detect location. Please select manually.", variant: "destructive" });
                     });
                   }}
                   className="text-[10px] text-primary flex items-center gap-1 hover:underline"

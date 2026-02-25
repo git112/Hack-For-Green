@@ -22,7 +22,7 @@ interface GovAirChatbotProps {
   healthData?: object;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "import.meta.env.VITE_API_URL";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export default function GovAirChatbot({
   userRole = "Public",
@@ -99,13 +99,13 @@ export default function GovAirChatbot({
       }
     } catch (error) {
       let errorMessage = "I apologize, but I'm experiencing technical difficulties.";
-      
+
       if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
         errorMessage = "⚠️ Cannot connect to the server. Please make sure the backend server is running on port 3000.\n\nTo start the server:\n1. Open a terminal\n2. Run: cd server && npm run dev\n3. Wait for 'Server running on port 3000'\n4. Try again";
       } else if (error instanceof Error) {
         errorMessage = `Error: ${error.message}`;
       }
-      
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
