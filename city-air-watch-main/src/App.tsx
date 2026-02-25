@@ -13,6 +13,7 @@ import CitizenDashboard from "./pages/citizen/Dashboard";
 import AIReport from "./pages/citizen/AIReport";
 import CleanNavigation from "./pages/citizen/CleanNavigation";
 import RewardsWallet from "./pages/citizen/RewardsWallet";
+import WalletHistory from "./pages/citizen/WalletHistory";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ActionCenter from "./pages/admin/ActionCenter";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="report" element={<AIReport />} />
             <Route path="navigate" element={<CleanNavigation />} />
             <Route path="wallet" element={<RewardsWallet />} />
+            <Route path="wallet/history" element={<WalletHistory />} />
           </Route>
 
           {/* Admin Routes */}

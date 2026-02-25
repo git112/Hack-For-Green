@@ -1,38 +1,39 @@
 import { motion } from "framer-motion";
 import { Wallet, Gift, Bus, Coffee, ShoppingBag, Ticket, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const rewards = [
-  { 
-    id: 1, 
-    title: "Free Bus Ticket", 
+  {
+    id: 1,
+    title: "Free Bus Ticket",
     description: "One-way city bus travel",
-    credits: 200, 
+    credits: 200,
     icon: Bus,
     category: "Transport"
   },
-  { 
-    id: 2, 
-    title: "Coffee Voucher", 
+  {
+    id: 2,
+    title: "Coffee Voucher",
     description: "Free coffee at partner cafes",
-    credits: 150, 
+    credits: 150,
     icon: Coffee,
     category: "Food & Drink"
   },
-  { 
-    id: 3, 
-    title: "Shopping Discount", 
+  {
+    id: 3,
+    title: "Shopping Discount",
     description: "10% off at eco-friendly stores",
-    credits: 300, 
+    credits: 300,
     icon: ShoppingBag,
     category: "Shopping"
   },
-  { 
-    id: 4, 
-    title: "Movie Ticket", 
+  {
+    id: 4,
+    title: "Movie Ticket",
     description: "Single movie ticket",
-    credits: 500, 
+    credits: 500,
     icon: Ticket,
     category: "Entertainment"
   },
@@ -99,8 +100,8 @@ export default function RewardsWallet() {
             <Gift className="w-4 h-4 mr-2" />
             Send Gift
           </Button>
-          <Button variant="secondary" size="sm" className="flex-1">
-            View History
+          <Button variant="secondary" size="sm" className="flex-1" asChild>
+            <Link to="/citizen/wallet/history">View History</Link>
           </Button>
         </div>
       </motion.div>
@@ -131,8 +132,8 @@ export default function RewardsWallet() {
               <p className="text-sm text-muted-foreground mb-4">{reward.description}</p>
               <div className="flex items-center justify-between">
                 <span className="font-display font-bold text-primary">{reward.credits} Credits</span>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant={totalCredits >= reward.credits ? "default" : "outline"}
                   onClick={() => handleRedeem(reward)}
                   disabled={totalCredits < reward.credits}
@@ -155,18 +156,19 @@ export default function RewardsWallet() {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-semibold text-foreground">Recent Activity</h3>
-          <Button variant="ghost" size="sm">
-            View All
-            <ChevronRight className="w-4 h-4 ml-1" />
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/citizen/wallet/history">
+              View All
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Link>
           </Button>
         </div>
         <div className="space-y-4">
           {transactions.map((tx, index) => (
             <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  tx.type === "earned" ? "bg-success/10" : "bg-destructive/10"
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.type === "earned" ? "bg-success/10" : "bg-destructive/10"
+                  }`}>
                   <span className={tx.type === "earned" ? "text-success" : "text-destructive"}>
                     {tx.type === "earned" ? "+" : "-"}
                   </span>
@@ -176,9 +178,8 @@ export default function RewardsWallet() {
                   <p className="text-xs text-muted-foreground">{tx.date}</p>
                 </div>
               </div>
-              <span className={`font-semibold ${
-                tx.type === "earned" ? "text-success" : "text-destructive"
-              }`}>
+              <span className={`font-semibold ${tx.type === "earned" ? "text-success" : "text-destructive"
+                }`}>
                 {tx.type === "earned" ? "+" : "-"}{tx.amount}
               </span>
             </div>
