@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  # Backend Server
+  backend:
+    build: ./server
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/city-air-watch
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3000
+    depends_on:
+      - mongodb
+
+  # Pathway Analytics Service
+  pathway:
+    build: ./pathway_service
+    ports:
+      - "5000:5000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      - ./pathway_service/data:/app/data
+
+  # Frontend Web UI
+  frontend:
+    build: .
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - pathway
+
+volumes:
+  mongodb_data:
