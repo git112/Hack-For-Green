@@ -56,32 +56,51 @@ export default function Analytics() {
 
     try {
       const element = dashboardRef.current;
+
       const canvas = await html2canvas(element, {
-        scale: 2, // Higher quality
+        scale: 1.5, // Slightly lower scale to avoid memory issues on some browsers
         useCORS: true,
-        backgroundColor: "hsl(var(--background))",
+        allowTaint: true,
+        backgroundColor: "#ffffff", // Use hex for reliability
         logging: false,
+        onclone: (clonedDoc) => {
+          // Hide elements with the 'no-export' class during capture
+          const elementsToHide = clonedDoc.querySelectorAll('.no-export');
+          elementsToHide.forEach(el => {
+            (el as HTMLElement).style.visibility = 'hidden';
+          });
+        }
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.9);
       const pdf = new jsPDF("p", "mm", "a4");
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 10; // Margin
+
+      // Calculate scaled dimensions to fit A4 with margins
+      const margin = 10;
+      const maxWidth = pdfWidth - (margin * 2);
+      const maxHeight = pdfHeight - 40; // Space for title
+
+      const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      const xOffset = (pdfWidth - finalWidth) / 2;
 
       pdf.setFontSize(18);
-      pdf.text("City Air Watch - Analytics Report", 15, 20);
+      pdf.setTextColor(40, 40, 40);
+      pdf.text("City Air Watch - Analytics Report", 105, 15, { align: "center" });
+
       pdf.setFontSize(10);
-      pdf.text(`Generated on: ${new Date().toLocaleString()}`, 15, 28);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, 105, 22, { align: "center" });
 
-      // We skip the header in the capture if we want, or just place the image
-      // Here we just place the whole dashboard capture below the title
-      pdf.addImage(imgData, "PNG", imgX, 35, imgWidth * ratio, imgHeight * ratio);
-
+      pdf.addImage(imgData, "JPEG", xOffset, 30, finalWidth, finalHeight);
       pdf.save(`CityAirWatch_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
 
       toast({
@@ -127,7 +146,12 @@ export default function Analytics() {
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+          <Button
+            variant="outline"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="no-export" // Add class to hide in PDF
+          >
             {isExporting ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (

@@ -49,33 +49,42 @@ export default function HealthImpact() {
     try {
       const element = dashboardRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
-        backgroundColor: "hsl(var(--background))",
+        allowTaint: true,
+        backgroundColor: "#ffffff",
         logging: false,
+        onclone: (clonedDoc) => {
+          const elementsToHide = clonedDoc.querySelectorAll('.no-export');
+          elementsToHide.forEach(el => {
+            (el as HTMLElement).style.visibility = 'hidden';
+          });
+        }
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.9);
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // Calculate dimensions maintaining aspect ratio
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const ratio = Math.min((pdfWidth - 20) / imgWidth, (pdfHeight - 60) / imgHeight);
+
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
 
       pdf.setFontSize(22);
       pdf.setTextColor(239, 68, 68); // Red color for health
       pdf.text("GOVERNMENT HEALTH IMPACT REPORT", 105, 20, { align: "center" });
 
       pdf.setFontSize(10);
-      pdf.setTextColor(100);
+      pdf.setTextColor(100, 100, 100);
       pdf.text(`Region: City-Wide Analysis`, 15, 30);
       pdf.text(`Report Period: FY 2024-25`, 15, 35);
       pdf.text(`Generated: ${new Date().toLocaleString()}`, 15, 40);
 
-      pdf.addImage(imgData, "PNG", 10, 50, imgWidth * ratio - 20, imgHeight * ratio - 20);
+      pdf.addImage(imgData, "JPEG", (pdfWidth - finalWidth) / 2, 50, finalWidth, finalHeight);
 
       pdf.save(`HealthImpact_Report_${new Date().toISOString().split('T')[0]}.pdf`);
 
@@ -357,7 +366,7 @@ export default function HealthImpact() {
             variant="ghost"
             onClick={handleExportPDF}
             disabled={isExporting}
-            className="w-full mt-5 rounded-2xl h-12 bg-primary/5 text-primary text-xs font-bold border border-primary/10 hover:bg-primary/10 shadow-lg shadow-primary/5"
+            className="no-export w-full mt-5 rounded-2xl h-12 bg-primary/5 text-primary text-xs font-bold border border-primary/10 hover:bg-primary/10 shadow-lg shadow-primary/5"
           >
             {isExporting ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -392,7 +401,7 @@ export default function HealthImpact() {
               Emergency advisories for elderly populations are mandatory for the next 48 hours.
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 no-export">
             <Button className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl px-8 font-bold shadow-xl shadow-orange-500/40">Dispatch Health Units</Button>
             <Button variant="outline" className="border-orange-500/50 text-orange-400 rounded-2xl px-8 font-bold backdrop-blur-md">Protocol View</Button>
           </div>
