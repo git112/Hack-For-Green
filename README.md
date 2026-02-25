@@ -6,7 +6,6 @@ A sophisticated GovTech ecosystem for real-time air pollution monitoring, citize
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Beta-orange)](#)
 
----
 
 ## � Overview
 
@@ -21,7 +20,7 @@ CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analy
 | **Clean Navigation** | Find the healthiest (not just fastest) route to your destination. |
 | **Rewards Wallet** | Gamified "Green Credits" system for active citizen participation. |
 
----
+
 
 ## 🏗️ Architecture
 
@@ -49,9 +48,8 @@ CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analy
 │                        │   - Action Reports    │
 │                        └───────────────────────┘
 └─────────────────────────────────────────────────────────────────┘
-```
 
----
+
 
 ## 📂 Project Structure
 
@@ -73,9 +71,7 @@ city-air-watch-main/
 │   └── data/               # Reference documents for RAG
 ├── start-all.bat           # Automated environment launcher
 └── package.json            # Root configuration
-```
 
----
 
 ## 🚀 Quick Start
 
@@ -92,7 +88,7 @@ MONGODB_URI=your_mongodb_connection_string
 GEMINI_API_KEY=your_gemini_api_key
 JWT_SECRET=your_super_secret_key
 PORT=3000
-```
+
 
 ### 2. Install Dependencies
 ```bash
@@ -109,14 +105,14 @@ pip install pathway google-generativeai fastapi uvicorn python-dotenv
 **Automatic (Windows):**
 ```bash
 ./start-all.bat
-```
+
 
 **Manual:**
 - **Pathway:** `python pathway_service/pathway_engine.py`
 - **Backend:** `cd server && npm run dev`
 - **Frontend:** `npm run dev`
 
----
+
 
 ## � API Endpoints
 
