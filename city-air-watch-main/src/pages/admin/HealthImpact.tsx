@@ -34,7 +34,7 @@ export default function HealthImpact() {
   useEffect(() => {
     const fetchHealthData = async () => {
       try {
-        const overviewRes = await fetch("http://localhost:3000/api/health/city");
+        const overviewRes = await fetch("import.meta.env.VITE_API_URL/api/health/city");
         const overviewData = await overviewRes.json();
         if (overviewData.success) {
           setCityOverview(overviewData.data); // Server returns .data for single results usually
@@ -43,7 +43,7 @@ export default function HealthImpact() {
 
         // Fetch trends (using a dummy ward ID for global or just using the endpoint)
         // Since I don't have a global trends endpoint in server.js, I'll fetch for a specific ward or handle the error
-        const trendsRes = await fetch("http://localhost:3000/api/health/ward/ward_1/trends");
+        const trendsRes = await fetch("import.meta.env.VITE_API_URL/api/health/ward/ward_1/trends");
         const trendsData = await trendsRes.json();
         if (trendsData.success) {
           setHealthTrends(trendsData.data.map((d: any) => ({

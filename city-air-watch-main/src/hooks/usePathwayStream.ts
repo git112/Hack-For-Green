@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const STREAM_URL = 'http://localhost:3000/api/stream/live';
+const STREAM_URL = `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/stream/live`;
 const MAX_LOG_ENTRIES = 80;
 
 export interface WardReading {

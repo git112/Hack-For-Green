@@ -29,7 +29,7 @@ export default function AIPrediction() {
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
-        const cityPredictionsRes = await fetch("http://localhost:3000/api/predictions/city");
+        const cityPredictionsRes = await fetch("import.meta.env.VITE_API_URL/api/predictions/city");
         const cityPredictionsData = await cityPredictionsRes.json();
         if (cityPredictionsData.success) {
           setWardPredictions(cityPredictionsData.data.map((p: any) => ({

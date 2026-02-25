@@ -176,7 +176,7 @@ City Max AQI: ${stream.cityStats?.max_aqi ?? "N/A"}
 Critical Wards: ${stream.cityStats?.critical_wards ?? 0}/${stream.cityStats?.total_wards ?? 8}
             `.trim();
 
-            const res = await fetch("http://localhost:3000/api/chatbot/chat", {
+            const res = await fetch("import.meta.env.VITE_API_URL/api/chatbot/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
