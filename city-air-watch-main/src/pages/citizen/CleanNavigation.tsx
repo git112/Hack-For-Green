@@ -52,20 +52,27 @@ export default function CleanNavigation() {
     }
 
     setLoading(true);
+
+    // Request with higher priority but allow some timeout
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setStart(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
 
-        // Try to get actual address via reverse geocoding (nominatim is free)
+        // Try to get actual address via reverse geocoding
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+          // Nominatim requires a user-agent to avoid being blocked
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`, {
+            headers: { 'User-Agent': 'CityAirWatch/1.0' }
+          });
           const data = await res.json();
           if (data.display_name) {
-            setStart(data.display_name.split(',').slice(0, 2).join(','));
+            // Pick the first few parts of the address for the input
+            const simplified = data.display_name.split(',').slice(0, 2).join(',');
+            setStart(simplified);
           }
         } catch (e) {
-          console.error("Reverse geocoding failed");
+          console.error("Reverse geocoding failed", e);
         }
 
         setLoading(false);
@@ -76,11 +83,21 @@ export default function CleanNavigation() {
       },
       (error) => {
         setLoading(false);
+        let errorMsg = "Could not retrieve your location. Please enter it manually.";
+        if (error.code === 1) errorMsg = "Permission denied. Please allow location access in your browser settings.";
+        if (error.code === 2) errorMsg = "Position unavailable. Ensure your GPS is active.";
+        if (error.code === 3) errorMsg = "Request timed out. Please try again or type manually.";
+
         toast({
           title: "Location Error",
-          description: "Could not retrieve your location. Please enter it manually.",
+          description: errorMsg,
           variant: "destructive",
         });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
       }
     );
   };

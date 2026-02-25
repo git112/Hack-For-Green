@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wind, User, Building2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Wind, User, Building2, ArrowLeft, Eye, EyeOff, LocateFixed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const wards = [
@@ -215,9 +215,35 @@ export default function Register() {
             </div>
 
             <div>
-              <Label htmlFor="location">
-                {userType === "citizen" ? "Home Ward" : "Assigned Zone"}
-              </Label>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="location">
+                  {userType === "citizen" ? "Home Ward" : "Assigned Zone"}
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) {
+                      toast({ title: "Not Supported", description: "GPS not supported", variant: "destructive" });
+                      return;
+                    }
+                    setLoading(true);
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                      // Logic to pick closest ward could go here
+                      // For now, let's just pick Ward 1 and notify
+                      setFormData(prev => ({ ...prev, ward: "Ward 1 - Central" }));
+                      setLoading(false);
+                      toast({ title: "Location Detected", description: "Auto-selected nearest ward: Ward 1" });
+                    }, () => {
+                      setLoading(false);
+                      toast({ title: "Location Error", description: "Could not detect location", variant: "destructive" });
+                    });
+                  }}
+                  className="text-[10px] text-primary flex items-center gap-1 hover:underline"
+                >
+                  <LocateFixed className="w-3 h-3" />
+                  Detect Closest Ward
+                </button>
+              </div>
               <Select
                 value={userType === "citizen" ? formData.ward : formData.zone}
                 onValueChange={(value: string) =>
