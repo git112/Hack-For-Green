@@ -23,6 +23,9 @@ CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analy
 ## 🎥 Demo Video 
 [city-air-gov.vercel.app/](https://city-air-gov.vercel.app/)
 
+## 🎥  Video 
+https://drive.google.com/file/d/1q00vabVoV1odN-EKE_G3Dmk3DXT1mhX6/view?usp=drive_link
+
 ## 🏗️ Architecture
 
 ```text
