@@ -250,7 +250,7 @@ export default function ActionCenter() {
             Manage and resolve citizen reports
           </p>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
+        <Select value={filter} onValueChange={(value: string) => setFilter(value)}>
           <SelectTrigger className="w-40 bg-card">
             <SelectValue placeholder="Filter" />
           </SelectTrigger>
@@ -360,7 +360,7 @@ export default function ActionCenter() {
                       )}
                       <Select
                         value={assignedCrews[task.id] || ""}
-                        onValueChange={(value) => handleAssignCrew(task.id, value)}
+                        onValueChange={(value: string) => handleAssignCrew(task.id, value)}
                       >
                         <SelectTrigger className="bg-background">
                           <SelectValue placeholder="Assign Crew" />

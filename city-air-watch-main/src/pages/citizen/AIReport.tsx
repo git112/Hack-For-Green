@@ -376,7 +376,7 @@ export default function AIReport() {
                       id="address"
                       placeholder="Enter specific address or landmark"
                       value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
                       className="pl-10"
                     />
                   </div>
@@ -393,7 +393,7 @@ export default function AIReport() {
                     id="description"
                     placeholder="Add any additional information about the pollution incident..."
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                     className="mt-1 min-h-24"
                   />
                 </div>

@@ -67,12 +67,12 @@ export default function CleanNavigation() {
                 id="start"
                 placeholder="Enter starting location"
                 value={start}
-                onChange={(e) => setStart(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStart(e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="destination">Destination</Label>
             <div className="relative mt-1">
@@ -81,14 +81,14 @@ export default function CleanNavigation() {
                 id="destination"
                 placeholder="Enter destination"
                 value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDestination(e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
 
-          <Button 
-            onClick={handleSearch} 
+          <Button
+            onClick={handleSearch}
             className="w-full gradient-primary border-0"
             disabled={!start || !destination}
           >
@@ -105,19 +105,18 @@ export default function CleanNavigation() {
           className="space-y-4"
         >
           <h3 className="font-display font-semibold text-foreground">Available Routes</h3>
-          
+
           {routes.map((route) => (
             <motion.div
               key={route.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className={`relative bg-card rounded-2xl border-2 p-6 cursor-pointer transition-all ${
-                selectedRoute === route.id
+              className={`relative bg-card rounded-2xl border-2 p-6 cursor-pointer transition-all ${selectedRoute === route.id
                   ? "border-primary shadow-lg"
                   : route.recommended
-                  ? "border-success/50 hover:border-success"
-                  : "border-border hover:border-muted-foreground"
-              }`}
+                    ? "border-success/50 hover:border-success"
+                    : "border-border hover:border-muted-foreground"
+                }`}
               onClick={() => setSelectedRoute(route.id)}
             >
               {route.recommended && (
@@ -141,11 +140,10 @@ export default function CleanNavigation() {
                   </div>
                 </div>
 
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                  route.type === "clean" 
-                    ? "bg-success/10 text-success" 
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${route.type === "clean"
+                    ? "bg-success/10 text-success"
                     : "bg-destructive/10 text-destructive"
-                }`}>
+                  }`}>
                   <Wind className="w-4 h-4" />
                   <span className="font-semibold">{route.aqi} AQI</span>
                 </div>
@@ -153,15 +151,14 @@ export default function CleanNavigation() {
 
               {/* Route Visual */}
               <div className="mt-4 h-2 rounded-full bg-muted overflow-hidden">
-                <div 
-                  className={`h-full rounded-full ${
-                    route.type === "clean" ? "bg-success" : "bg-destructive"
-                  }`}
+                <div
+                  className={`h-full rounded-full ${route.type === "clean" ? "bg-success" : "bg-destructive"
+                    }`}
                   style={{ width: route.type === "clean" ? "30%" : "85%" }}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {route.type === "clean" 
+                {route.type === "clean"
                   ? "🌿 Low pollution exposure throughout the route"
                   : "⚠️ High pollution zones along this route"}
               </p>

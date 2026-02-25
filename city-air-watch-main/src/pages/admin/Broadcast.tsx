@@ -66,12 +66,12 @@ export default function Broadcast() {
     setSending(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
     setSending(false);
-    
+
     toast({
       title: "Alert Sent Successfully! 📢",
       description: `Message broadcasted to ${selectedWard}`,
     });
-    
+
     setMessage("");
     setSelectedWard("");
   };
@@ -90,7 +90,7 @@ export default function Broadcast() {
       title: "E-Penalty Issued Successfully! ⚖️",
       description: `Penalty of ₹${penaltyAmount} issued for ${selectedViolation}`,
     });
-    
+
     setPenaltyAmount("");
     setSelectedViolation("");
   };
@@ -136,130 +136,130 @@ export default function Broadcast() {
 
         <TabsContent value="alerts" className="space-y-6 mt-6">
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Compose Alert */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl border border-border p-6"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="font-display font-semibold text-foreground">Compose Alert</h3>
-          </div>
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Compose Alert */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-card rounded-2xl border border-border p-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="font-display font-semibold text-foreground">Compose Alert</h3>
+              </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="ward">Target Ward</Label>
-              <Select value={selectedWard} onValueChange={setSelectedWard}>
-                <SelectTrigger className="bg-background mt-1">
-                  <SelectValue placeholder="Select target ward" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border">
-                  {wards.map((ward) => (
-                    <SelectItem key={ward} value={ward}>{ward}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="ward">Target Ward</Label>
+                  <Select value={selectedWard} onValueChange={setSelectedWard}>
+                    <SelectTrigger className="bg-background mt-1">
+                      <SelectValue placeholder="Select target ward" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border">
+                      {wards.map((ward) => (
+                        <SelectItem key={ward} value={ward}>{ward}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div>
-              <Label htmlFor="message">Alert Message</Label>
-              <Textarea
-                id="message"
-                placeholder="Type your alert message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="mt-1 min-h-32"
-              />
-            </div>
+                <div>
+                  <Label htmlFor="message">Alert Message</Label>
+                  <Textarea
+                    id="message"
+                    placeholder="Type your alert message..."
+                    value={message}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMessage(e.target.value)}
+                    className="mt-1 min-h-32"
+                  />
+                </div>
 
-            {/* Quick Templates */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Quick Templates</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => setMessage(template.message)}
-                    className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                {/* Quick Templates */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">Quick Templates</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => setMessage(template.message)}
+                        className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {template.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSend}
+                  className="w-full gradient-primary border-0 h-12"
+                  disabled={sending || !selectedWard || !message}
+                >
+                  {sending ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Alert
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Recent Alerts */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-card rounded-2xl border border-border p-6"
+            >
+              <h3 className="font-display font-semibold text-foreground mb-6">Recent Alerts</h3>
+
+              <div className="space-y-4">
+                {recentAlerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    {template.title}
-                  </button>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="w-4 h-4 text-success" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{alert.message}</p>
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                          <span>{alert.time}</span>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {alert.recipients.toLocaleString()} recipients
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
 
-            <Button 
-              onClick={handleSend} 
-              className="w-full gradient-primary border-0 h-12"
-              disabled={sending || !selectedWard || !message}
-            >
-              {sending ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Alert
-                </>
-              )}
-            </Button>
-          </div>
-        </motion.div>
-
-        {/* Recent Alerts */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-card rounded-2xl border border-border p-6"
-        >
-          <h3 className="font-display font-semibold text-foreground mb-6">Recent Alerts</h3>
-          
-          <div className="space-y-4">
-            {recentAlerts.map((alert) => (
-              <div
-                key={alert.id}
-                className="p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-              >
+              <div className="mt-6 p-4 rounded-xl bg-warning/10 border border-warning/20">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-4 h-4 text-success" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{alert.message}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                      <span>{alert.time}</span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {alert.recipients.toLocaleString()} recipients
-                      </span>
-                    </div>
+                  <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Emergency Protocol</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      For city-wide emergencies, use the emergency broadcast system for immediate notification to all citizens.
+                    </p>
                   </div>
                 </div>
               </div>
-            ))}
+            </motion.div>
           </div>
-
-          <div className="mt-6 p-4 rounded-xl bg-warning/10 border border-warning/20">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Emergency Protocol</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  For city-wide emergencies, use the emergency broadcast system for immediate notification to all citizens.
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
         </TabsContent>
 
         <TabsContent value="violations" className="space-y-6 mt-6">
@@ -282,16 +282,14 @@ export default function Broadcast() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        violation.severity === "critical" ? "bg-destructive/10" 
-                        : violation.severity === "high" ? "bg-warning/10"
-                        : "bg-primary/10"
-                      }`}>
-                        <Ban className={`w-5 h-5 ${
-                          violation.severity === "critical" ? "text-destructive" 
-                          : violation.severity === "high" ? "text-warning"
-                          : "text-primary"
-                        }`} />
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${violation.severity === "critical" ? "bg-destructive/10"
+                          : violation.severity === "high" ? "bg-warning/10"
+                            : "bg-primary/10"
+                        }`}>
+                        <Ban className={`w-5 h-5 ${violation.severity === "critical" ? "text-destructive"
+                            : violation.severity === "high" ? "text-warning"
+                              : "text-primary"
+                          }`} />
                       </div>
                       <div>
                         <p className="font-medium text-foreground">{violation.type}</p>
@@ -306,13 +304,12 @@ export default function Broadcast() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-foreground">₹{violation.penalty.toLocaleString()}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        violation.status === "paid"
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${violation.status === "paid"
                           ? "bg-success text-success-foreground"
                           : violation.status === "issued"
-                          ? "bg-warning text-warning-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}>
+                            ? "bg-warning text-warning-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
                         {violation.status.toUpperCase()}
                       </span>
                     </div>
@@ -320,8 +317,8 @@ export default function Broadcast() {
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <div className="flex items-center gap-2">
                       {violation.evidence && (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleViewEvidence(violation.id)}
                         >
@@ -329,19 +326,18 @@ export default function Broadcast() {
                           View Evidence
                         </Button>
                       )}
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        violation.severity === "critical"
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${violation.severity === "critical"
                           ? "bg-destructive text-destructive-foreground"
                           : violation.severity === "high"
-                          ? "bg-warning text-warning-foreground"
-                          : "bg-primary text-primary-foreground"
-                      }`}>
+                            ? "bg-warning text-warning-foreground"
+                            : "bg-primary text-primary-foreground"
+                        }`}>
                         {violation.severity.toUpperCase()}
                       </span>
                     </div>
                     {violation.status === "pending" && (
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="gradient-primary border-0"
                         onClick={() => handleIssuePenaltyFromViolation(violation.id, violation.type, violation.location)}
                       >
@@ -394,13 +390,13 @@ export default function Broadcast() {
                     type="number"
                     placeholder="Enter penalty amount"
                     value={penaltyAmount}
-                    onChange={(e) => setPenaltyAmount(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPenaltyAmount(e.target.value)}
                     className="mt-1"
                   />
                 </div>
 
-                <Button 
-                  onClick={handleIssuePenalty} 
+                <Button
+                  onClick={handleIssuePenalty}
                   className="w-full gradient-primary border-0"
                   disabled={!selectedViolation || !penaltyAmount}
                 >
@@ -428,13 +424,12 @@ export default function Broadcast() {
                         <p className="font-medium text-foreground">{penalty.violation}</p>
                         <p className="text-xs text-muted-foreground mt-1">{penalty.offender}</p>
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        penalty.status === "paid"
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${penalty.status === "paid"
                           ? "bg-success text-success-foreground"
                           : penalty.status === "issued"
-                          ? "bg-warning text-warning-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}>
+                            ? "bg-warning text-warning-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
                         {penalty.status.toUpperCase()}
                       </span>
                     </div>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  User, Mail, Phone, Shield, Bell, Lock, Save, 
-  Camera, Edit2, CheckCircle, AlertCircle 
+import {
+  User, Mail, Phone, Shield, Bell, Lock, Save,
+  Camera, Edit2, CheckCircle, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ export default function Settings() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const [profile, setProfile] = useState({
     name: localStorage.getItem("userName") || "Admin User",
     email: localStorage.getItem("userEmail") || "admin@cityair.gov.in",
@@ -46,12 +46,12 @@ export default function Settings() {
     setLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Save to localStorage
     Object.entries(profile).forEach(([key, value]) => {
       localStorage.setItem(`user${key.charAt(0).toUpperCase() + key.slice(1)}`, value);
     });
-    
+
     setLoading(false);
     setIsEditing(false);
     toast({
@@ -123,8 +123,8 @@ export default function Settings() {
               <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
                 Cancel
               </Button>
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="gradient-primary border-0"
                 onClick={handleSaveProfile}
                 disabled={loading}
@@ -170,7 +170,7 @@ export default function Settings() {
                 <Input
                   id="name"
                   value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, name: e.target.value })}
                   disabled={!isEditing}
                   className="mt-1"
                 />
@@ -184,7 +184,7 @@ export default function Settings() {
                     id="email"
                     type="email"
                     value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, email: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10"
                   />
@@ -199,7 +199,7 @@ export default function Settings() {
                     id="phone"
                     type="tel"
                     value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, phone: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10"
                   />
@@ -211,7 +211,7 @@ export default function Settings() {
                 <Input
                   id="designation"
                   value={profile.designation}
-                  onChange={(e) => setProfile({ ...profile, designation: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, designation: e.target.value })}
                   disabled={!isEditing}
                   className="mt-1"
                 />
@@ -222,7 +222,7 @@ export default function Settings() {
                 <Input
                   id="department"
                   value={profile.department}
-                  onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, department: e.target.value })}
                   disabled={!isEditing}
                   className="mt-1"
                 />
@@ -235,7 +235,7 @@ export default function Settings() {
                   <Input
                     id="employeeId"
                     value={profile.employeeId}
-                    onChange={(e) => setProfile({ ...profile, employeeId: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfile({ ...profile, employeeId: e.target.value })}
                     disabled={!isEditing}
                     className="pl-10"
                   />
@@ -300,8 +300,8 @@ export default function Settings() {
             </div>
             <h2 className="font-display text-xl font-semibold text-foreground">Security Settings</h2>
           </div>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="gradient-primary border-0"
             onClick={handleSaveSecurity}
             disabled={loading}

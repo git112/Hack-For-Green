@@ -160,7 +160,7 @@ export default function Register() {
                 type="text"
                 placeholder="Enter your full name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
             </div>
@@ -173,7 +173,7 @@ export default function Register() {
                   type="text"
                   placeholder="Enter your employee ID"
                   value={formData.employeeId}
-                  onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, employeeId: e.target.value })}
                   required
                 />
               </div>
@@ -188,7 +188,7 @@ export default function Register() {
                 type="email"
                 placeholder={userType === "government" ? "name@gov.in" : "you@example.com"}
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, email: e.target.value })}
                 required
               />
             </div>
@@ -201,7 +201,7 @@ export default function Register() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a strong password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, password: e.target.value })}
                   required
                 />
                 <button
@@ -220,7 +220,7 @@ export default function Register() {
               </Label>
               <Select
                 value={userType === "citizen" ? formData.ward : formData.zone}
-                onValueChange={(value) =>
+                onValueChange={(value: string) =>
                   setFormData({
                     ...formData,
                     [userType === "citizen" ? "ward" : "zone"]: value,
