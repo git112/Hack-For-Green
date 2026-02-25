@@ -21,7 +21,7 @@ CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analy
 | **Rewards Wallet** | Gamified "Green Credits" system for active citizen participation. |
 
 ## 🎥 Demo Video 
-city-air-gov.vercel.app/
+[city-air-gov.vercel.app/](https://city-air-gov.vercel.app/)
 
 ## 🏗️ Architecture
 
