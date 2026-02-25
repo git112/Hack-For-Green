@@ -20,7 +20,8 @@ CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analy
 | **Clean Navigation** | Find the healthiest (not just fastest) route to your destination. |
 | **Rewards Wallet** | Gamified "Green Credits" system for active citizen participation. |
 
-
+## 🎥 Demo Video 
+city-air-gov.vercel.app/
 
 ## 🏗️ Architecture
 
