@@ -6,7 +6,6 @@ A sophisticated GovTech ecosystem for real-time air pollution monitoring, citize
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Beta-orange)](#)
 
-
 ## � Overview
 
 CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analysis**, and a **modern React dashboard** to bridge the gap between citizen awareness and government action.
@@ -20,11 +19,14 @@ CleanAirGov combines **Pathway real-time streaming**, **Gemini-powered RAG analy
 | **Clean Navigation** | Find the healthiest (not just fastest) route to your destination. |
 | **Rewards Wallet** | Gamified "Green Credits" system for active citizen participation. |
 
-## 🎥 Demo Video 
-[city-air-gov.vercel.app/](https://city-air-gov.vercel.app/)
+## 🎥 Project Demo
 
-## 🎥  Video 
-https://drive.google.com/file/d/1q00vabVoV1odN-EKE_G3Dmk3DXT1mhX6/view?usp=drive_link
+- 📽️ **Video Walkthrough:**  
+  https://drive.google.com/file/d/1q00vabVoV1odN-EKE_G3Dmk3DXT1mhX6/view?usp=drive_link  
+
+- 🌐 **Live Deployment:**  
+  https://city-air-gov.vercel.app/
+
 
 ## 🏗️ Architecture
 
