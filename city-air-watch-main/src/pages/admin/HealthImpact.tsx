@@ -1,14 +1,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart, Baby, Users, Thermometer, AlertTriangle, TrendingUp,
-  MapPin, Activity, Wind, Info, ShieldCheck, Zap
+  MapPin, Activity, Wind, Info, ShieldCheck, Zap, Download, Loader2
 } from "lucide-react";
 import { AQIBadge } from "@/components/ui/AQIBadge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathwayStream } from "@/hooks/usePathwayStream";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { useToast } from "@/hooks/use-toast";
 
 // Fallback static data moved inside as initial state if needed, or replaced by dynamic fetching
 
@@ -30,6 +33,67 @@ export default function HealthImpact() {
   const [cityOverview, setCityOverview] = useState<any>(null);
   const [wardHealthData, setWardHealthData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+
+    setIsExporting(true);
+    toast({
+      title: "Generating Report",
+      description: "Compiling health impact analytics...",
+    });
+
+    try {
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "hsl(var(--background))",
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Calculate dimensions maintaining aspect ratio
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+      pdf.setFontSize(22);
+      pdf.setTextColor(239, 68, 68); // Red color for health
+      pdf.text("GOVERNMENT HEALTH IMPACT REPORT", 105, 20, { align: "center" });
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(100);
+      pdf.text(`Region: City-Wide Analysis`, 15, 30);
+      pdf.text(`Report Period: FY 2024-25`, 15, 35);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 15, 40);
+
+      pdf.addImage(imgData, "PNG", 10, 50, imgWidth * ratio - 20, imgHeight * ratio - 20);
+
+      pdf.save(`HealthImpact_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: "Download Complete",
+        description: "Health impact report saved successfully.",
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({
+        title: "Export Error",
+        description: "Failed to generate health report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchHealthData = async () => {
@@ -76,7 +140,7 @@ export default function HealthImpact() {
   ];
 
   return (
-    <div className="space-y-6 container mx-auto pb-10">
+    <div className="space-y-6 container mx-auto pb-10" ref={dashboardRef}>
       {/* 🏥 HEADER & SELECTION */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -289,8 +353,18 @@ export default function HealthImpact() {
             ))}
           </div>
 
-          <Button variant="ghost" className="w-full mt-5 rounded-2xl h-12 bg-primary/5 text-primary text-xs font-bold border border-primary/10 hover:bg-primary/10 shadow-lg shadow-primary/5">
-            Download Gov Health Report (PDF)
+          <Button
+            variant="ghost"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="w-full mt-5 rounded-2xl h-12 bg-primary/5 text-primary text-xs font-bold border border-primary/10 hover:bg-primary/10 shadow-lg shadow-primary/5"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {isExporting ? "Generating PDF..." : "Download Gov Health Report (PDF)"}
           </Button>
         </motion.div>
       </div>

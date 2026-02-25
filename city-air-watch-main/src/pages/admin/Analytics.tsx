@@ -1,8 +1,12 @@
 import { motion } from "framer-motion";
-import { BarChart3, TrendingDown, Download, Calendar, Filter } from "lucide-react";
+import { BarChart3, TrendingDown, Download, Calendar, Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from "recharts";
+import { useRef, useState } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { useToast } from "@/hooks/use-toast";
 
 const monthlyData = [
   { month: "Jan", aqi: 180 },
@@ -37,8 +41,67 @@ const wardComparison = [
 ];
 
 export default function Analytics() {
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+
+    setIsExporting(true);
+    toast({
+      title: "Generating PDF",
+      description: "Capturing dashboard analytics...",
+    });
+
+    try {
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        backgroundColor: "hsl(var(--background))",
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10; // Margin
+
+      pdf.setFontSize(18);
+      pdf.text("City Air Watch - Analytics Report", 15, 20);
+      pdf.setFontSize(10);
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, 15, 28);
+
+      // We skip the header in the capture if we want, or just place the image
+      // Here we just place the whole dashboard capture below the title
+      pdf.addImage(imgData, "PNG", imgX, 35, imgWidth * ratio, imgHeight * ratio);
+
+      pdf.save(`CityAirWatch_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      toast({
+        title: "Export Successful",
+        description: "Your analytics report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error generating your PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={dashboardRef}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -52,7 +115,7 @@ export default function Analytics() {
             Track pollution trends and measure impact
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 no-export"> {/* no-export class if we want to hide it in canvas, but html2canvas needs extra config for that */}
           <Select defaultValue="year">
             <SelectTrigger className="w-36 bg-card">
               <Calendar className="w-4 h-4 mr-2" />
@@ -64,9 +127,13 @@ export default function Analytics() {
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export PDF
+          <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {isExporting ? "Exporting..." : "Export PDF"}
           </Button>
         </div>
       </motion.div>
@@ -112,26 +179,26 @@ export default function Analytics() {
               <AreaChart data={monthlyData}>
                 <defs>
                   <linearGradient id="colorAqi" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="aqi" 
-                  stroke="hsl(var(--primary))" 
-                  fillOpacity={1} 
-                  fill="url(#colorAqi)" 
+                <Area
+                  type="monotone"
+                  dataKey="aqi"
+                  stroke="hsl(var(--primary))"
+                  fillOpacity={1}
+                  fill="url(#colorAqi)"
                   strokeWidth={2}
                 />
               </AreaChart>
@@ -163,9 +230,9 @@ export default function Analytics() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px'
                   }}
@@ -201,9 +268,9 @@ export default function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="ward" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px'
                 }}
